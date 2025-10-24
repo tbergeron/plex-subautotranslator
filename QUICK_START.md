@@ -29,8 +29,9 @@ OPENAI_API_KEY=sk-proj-your_key_here
 # Your Plex token (see below how to get it)
 PLEX_TOKEN=your_plex_token
 
-# Where your media files are stored (use backslashes for Windows!)
-MEDIA_BASE_PATH=D:\Plex\Media
+# Optional: Restrict to specific folders (comma-separated)
+# Leave blank to process all Plex libraries
+ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows
 
 # What language to translate to
 TARGET_LANG=English

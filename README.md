@@ -62,10 +62,16 @@ Open the `.env` file with Notepad and fill in your settings:
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxx
 OPENAI_MODEL=gpt-4o-mini
 
-# Windows paths - use backslashes!
-MEDIA_BASE_PATH=D:\Plex\Media
+# Plex configuration
 PLEX_SERVER_URL=http://localhost:32400
 PLEX_TOKEN=xxxxxxxxxxxxxxxxxxxx
+
+# Optional: Restrict to specific paths (comma-separated)
+# Leave blank to process all media, or add your library paths:
+# For multiple libraries (Movies + TV Shows):
+ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows
+# For single library:
+# ALLOWED_PATHS=D:\Plex\Media
 
 # Target language for translation
 TARGET_LANG=English
@@ -78,6 +84,8 @@ PORT=4000
 # Logging level
 LOG_LEVEL=info
 ```
+
+**Note about file paths**: Plex provides the full file path automatically via webhooks, so you don't need to configure a base path. The `ALLOWED_PATHS` setting is optional and only used for security if you want to restrict which directories are processed.
 
 **Step 5: Configure Windows Firewall**
 
@@ -144,10 +152,13 @@ Edit `.env` with your settings:
 OPENAI_API_KEY=sk-proj-xxxxxxxxxxxxx
 OPENAI_MODEL=gpt-4o-mini
 
-# Plex Configuration (Windows paths)
-MEDIA_BASE_PATH=D:\Plex\Media
+# Plex Configuration
 PLEX_SERVER_URL=http://localhost:32400
 PLEX_TOKEN=xxxxxxxxxxxxxxxxxxxx
+
+# Optional: Restrict to specific paths (comma-separated)
+# Leave blank to process all media
+ALLOWED_PATHS=
 
 # Translation Configuration
 TARGET_LANG=English
@@ -339,7 +350,36 @@ The `en` code is derived from the first 2 letters of `TARGET_LANG` in your `.env
 | `PORT` | `4000` | Server port |
 | `PLEX_SERVER_URL` | `http://localhost:32400` | Plex server URL |
 | `PLEX_TOKEN` | - | Plex authentication token |
+| `ALLOWED_PATHS` | - | Optional: Comma-separated paths to restrict processing (see below) |
 | `LOG_LEVEL` | `info` | Logging level (error, warn, info, debug) |
+
+### Multiple Plex Libraries
+
+If you have multiple Plex libraries with different paths (e.g., Movies and TV Shows), you have two options:
+
+**Option 1: Process All Libraries (Recommended)**
+
+Leave `ALLOWED_PATHS` blank or omit it entirely:
+
+```env
+ALLOWED_PATHS=
+```
+
+The service will automatically process media from all Plex libraries. Plex provides the full file path in the webhook.
+
+**Option 2: Restrict to Specific Libraries (Security)**
+
+Use comma-separated paths to only process specific directories:
+
+```env
+# Multiple libraries
+ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows,F:\Media\Anime
+
+# Or single library
+ALLOWED_PATHS=D:\Plex\Movies
+```
+
+This is useful if you only want to translate subtitles for certain libraries and ignore others.
 
 ### Supported Languages
 

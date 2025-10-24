@@ -61,7 +61,6 @@ Get your API key from: https://platform.openai.com/api-keys
 ### Plex Configuration
 
 ```env
-MEDIA_BASE_PATH=D:\Plex\Media
 PLEX_SERVER_URL=http://localhost:32400
 PLEX_TOKEN=xxxxxxxxxxxxxxxxxxxx
 ```
@@ -74,15 +73,24 @@ PLEX_TOKEN=xxxxxxxxxxxxxxxxxxxx
 4. Look at the URL - find `X-Plex-Token=...`
 5. Copy the token (everything after the equals sign)
 
-#### Setting Media Path:
+#### Multiple Library Paths (Optional):
 
-- Find where your Plex media is stored
-- Common locations:
-  - `C:\Users\YourName\Videos\Plex`
-  - `D:\Media\Plex`
-  - `E:\Plex\Movies`
+If you have multiple Plex libraries (e.g., Movies and TV Shows in different locations), you can:
 
-**Important**: Use backslashes (`\`) for Windows paths!
+**Option 1**: Leave `ALLOWED_PATHS` blank to process all libraries automatically (recommended)
+
+```env
+ALLOWED_PATHS=
+```
+
+**Option 2**: Specify paths to restrict processing to certain libraries:
+
+```env
+# Multiple libraries - comma-separated, use backslashes for Windows
+ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows,F:\Media\Anime
+```
+
+**Important**: Plex sends the full file path automatically, so this setting is optional and only needed if you want to restrict which folders are processed for security.
 
 ### Target Language
 
@@ -103,9 +111,9 @@ You can change this to any language:
 ```env
 OPENAI_API_KEY=sk-proj-abc123def456ghi789
 OPENAI_MODEL=gpt-4o-mini
-MEDIA_BASE_PATH=D:\Plex\Media
 PLEX_SERVER_URL=http://localhost:32400
 PLEX_TOKEN=abcdef1234567890
+ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows
 TARGET_LANG=English
 MAX_CHUNK_SIZE=10000
 MAX_TOKENS=8000

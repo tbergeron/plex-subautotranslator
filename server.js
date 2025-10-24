@@ -14,9 +14,10 @@ const upload = multer();
 // Configuration
 const CONFIG = {
   PORT: process.env.PORT || 4000,
-  MEDIA_BASE_PATH: process.env.MEDIA_BASE_PATH || '',
   TARGET_LANG: process.env.TARGET_LANG || 'English',
-  LOG_LEVEL: process.env.LOG_LEVEL || 'info'
+  LOG_LEVEL: process.env.LOG_LEVEL || 'info',
+  // Optional: Comma-separated list of allowed media paths for security
+  ALLOWED_PATHS: process.env.ALLOWED_PATHS ? process.env.ALLOWED_PATHS.split(',').map(p => p.trim()) : []
 };
 
 // Middleware
@@ -141,6 +142,24 @@ function subtitleExists(videoPath, targetLang) {
 }
 
 /**
+ * Check if the video path is in an allowed directory
+ */
+function isPathAllowed(videoPath) {
+  // If no allowed paths configured, allow all
+  if (CONFIG.ALLOWED_PATHS.length === 0) {
+    return true;
+  }
+  
+  // Check if the video path starts with any of the allowed paths
+  return CONFIG.ALLOWED_PATHS.some(allowedPath => {
+    // Normalize paths for comparison (handle both forward and back slashes)
+    const normalizedVideoPath = videoPath.replace(/\\/g, '/').toLowerCase();
+    const normalizedAllowedPath = allowedPath.replace(/\\/g, '/').toLowerCase();
+    return normalizedVideoPath.startsWith(normalizedAllowedPath);
+  });
+}
+
+/**
  * Main subtitle processing workflow
  */
 async function processSubtitle(videoPath, sectionId) {
@@ -149,6 +168,13 @@ async function processSubtitle(videoPath, sectionId) {
   try {
     logger.info('=== Starting subtitle processing ===');
     logger.info(`Video path: ${videoPath}`);
+
+    // Check if path is allowed (security feature)
+    if (!isPathAllowed(videoPath)) {
+      logger.warn(`Video path not in allowed paths: ${videoPath}`);
+      logger.info('Skipping processing for security reasons');
+      return;
+    }
 
     // Verify the video file exists
     if (!fs.existsSync(videoPath)) {
@@ -209,7 +235,12 @@ app.listen(CONFIG.PORT, () => {
   logger.info('=================================');
   logger.info(`Server listening on port ${CONFIG.PORT}`);
   logger.info(`Target language: ${CONFIG.TARGET_LANG}`);
-  logger.info(`Media base path: ${CONFIG.MEDIA_BASE_PATH || 'Not set'}`);
+  if (CONFIG.ALLOWED_PATHS.length > 0) {
+    logger.info(`Allowed media paths: ${CONFIG.ALLOWED_PATHS.length} configured`);
+    CONFIG.ALLOWED_PATHS.forEach(p => logger.info(`  - ${p}`));
+  } else {
+    logger.info('Allowed media paths: All paths allowed');
+  }
   logger.info('Waiting for Plex webhooks...');
   logger.info('=================================');
 });
