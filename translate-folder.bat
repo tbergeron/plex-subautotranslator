@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal disabledelayedexpansion
 
 REM Windows batch wrapper for translate-folder.js
 REM Makes it easier to drag-and-drop folders
@@ -30,7 +30,7 @@ if "%~1"=="" (
     call :RemoveQuotes FOLDER_PATH
     
     REM Check if user entered anything
-    if "!FOLDER_PATH!"=="" (
+    if "%FOLDER_PATH%"=="" (
         echo.
         echo ERROR: No folder path provided!
         pause

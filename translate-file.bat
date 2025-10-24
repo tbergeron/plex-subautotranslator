@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal disabledelayedexpansion
 
 REM Windows batch wrapper for translate-file.js
 REM Makes it easier to drag-and-drop files
@@ -30,7 +30,7 @@ if "%~1"=="" (
     call :RemoveQuotes VIDEO_FILE
     
     REM Check if user entered anything
-    if "!VIDEO_FILE!"=="" (
+    if "%VIDEO_FILE%"=="" (
         echo.
         echo ERROR: No file path provided!
         pause
