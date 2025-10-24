@@ -86,7 +86,7 @@ app.post('/webhook', upload.single('thumb'), async (req, res) => {
 
     // Process the subtitle in the background
     processSubtitle(filePath, sectionId).catch(err => {
-      logger.error('Error processing subtitle:', err);
+      logger.error(`Error processing subtitle for ${filePath}:`, err);
     });
 
   } catch (error) {
@@ -248,7 +248,7 @@ async function processSubtitle(videoPath, sectionId) {
     logger.info(`Total processing time: ${duration}s`);
 
   } catch (error) {
-    logger.error('Error in processSubtitle:', error);
+    logger.error(`Error in processSubtitle for ${videoPath}:`, error);
     throw error;
   }
 }

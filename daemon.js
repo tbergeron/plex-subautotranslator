@@ -96,7 +96,7 @@ async function waitForStableFile(filePath, threshold = CONFIG.STABLE_THRESHOLD) 
     
     try {
       if (!fs.existsSync(filePath)) {
-        logger.debug('File no longer exists, aborting');
+        logger.debug(`File no longer exists, aborting: ${filePath}`);
         return false;
       }
 
@@ -110,12 +110,12 @@ async function waitForStableFile(filePath, threshold = CONFIG.STABLE_THRESHOLD) 
         lastSize = currentSize;
       }
     } catch (error) {
-      logger.debug('Error checking file stability:', error.message);
+      logger.debug(`Error checking file stability for ${filePath}:`, error.message);
       return false;
     }
   }
 
-  logger.debug('File is stable and ready for processing');
+  logger.debug(`File is stable and ready for processing: ${filePath}`);
   return true;
 }
 
@@ -222,7 +222,7 @@ function handleFileAdded(filePath) {
   const timer = setTimeout(() => {
     debounceTimers.delete(filePath);
     processVideoFile(filePath).catch(err => {
-      logger.error('Unhandled error in processVideoFile:', err);
+      logger.error(`Unhandled error in processVideoFile for ${filePath}:`, err);
     });
   }, CONFIG.DEBOUNCE_DELAY);
 
