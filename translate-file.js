@@ -67,13 +67,13 @@ async function subtitleExists(videoPath, targetLang) {
       try {
         const detectedLang = await detectSubtitleLanguage(subtitlePath);
         if (languagesMatch(detectedLang, targetLang)) {
-          logger.info(`Subtitle is already in target language (${detectedLang})`);
+          logger.info(`Subtitle is already in target language (${detectedLang}) - ${subtitlePath}`);
           return subtitlePath;
         } else {
-          logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate`);
+          logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate (${subtitlePath})`);
         }
       } catch (error) {
-        logger.warn(`Could not detect language of existing subtitle: ${error.message}`);
+        logger.warn(`Could not detect language of existing subtitle (${subtitlePath}): ${error.message}`);
         // If we can't detect, assume it needs translation
       }
     }
@@ -106,7 +106,7 @@ async function main() {
     // Check if subtitle already exists in target language
     const existingSub = await subtitleExists(videoPath, targetLang);
     if (existingSub) {
-      logger.info('Subtitle already exists in target language!');
+      logger.info(`Subtitle already exists in target language: ${existingSub}`);
       logger.info(`Location: ${existingSub}`);
       
       const readline = require('readline').createInterface({
@@ -126,7 +126,7 @@ async function main() {
 
       // Delete existing subtitle
       fs.unlinkSync(existingSub);
-      logger.info('Deleted existing subtitle');
+      logger.info(`Deleted existing subtitle: ${existingSub}`);
     }
 
     // Step 1: Extract subtitle

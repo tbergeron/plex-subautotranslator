@@ -66,10 +66,10 @@ async function subtitleExists(videoPath, targetLang) {
       try {
         const detectedLang = await detectSubtitleLanguage(subtitlePath);
         if (languagesMatch(detectedLang, targetLang)) {
-          logger.info(`Subtitle is already in target language (${detectedLang}), skipping`);
+          logger.info(`Subtitle is already in target language (${detectedLang}), skipping (${subtitlePath})`);
           return true;
         } else {
-          logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate`);
+          logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate (${subtitlePath})`);
         }
       } catch (error) {
         logger.warn(`Could not detect language of existing subtitle (${subtitlePath}): ${error.message}`);
@@ -153,7 +153,7 @@ async function processVideoFile(videoPath) {
 
     // Check if subtitle already exists in target language
     if (await subtitleExists(videoPath, CONFIG.TARGET_LANG)) {
-      logger.info('Subtitle already exists in target language, skipping');
+      logger.info(`Subtitle already exists in target language, skipping (${videoPath})`);
       processedFiles.add(videoPath);
       processingFiles.delete(videoPath);
       return;
