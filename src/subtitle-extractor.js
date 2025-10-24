@@ -2,7 +2,11 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const path = require('path');
 const fs = require('fs');
+const { execFile } = require('child_process');
+const { promisify } = require('util');
 const { logger } = require('./logger');
+
+const execFileAsync = promisify(execFile);
 
 // Set ffmpeg path to the static binary
 ffmpeg.setFfmpegPath(ffmpegStatic);
@@ -82,6 +86,103 @@ async function extractSubtitle(videoPath) {
 }
 
 /**
+ * Check if mkvextract is available
+ * @returns {Promise<boolean>}
+ */
+async function isMkvExtractAvailable() {
+  try {
+    await execFileAsync('mkvextract', ['--version']);
+    return true;
+  } catch (error) {
+    return false;
+  }
+}
+
+/**
+ * Extract subtitle using mkvextract (best for MKV files)
+ * @param {string} videoPath - Path to the video file
+ * @param {number} streamIndex - Index of the subtitle stream
+ * @param {string} outputPath - Output path for the extracted subtitle
+ * @returns {Promise<string|null>}
+ */
+async function extractWithMkvExtract(videoPath, streamIndex, outputPath) {
+  try {
+    logger.info(`    Using mkvextract to extract track ${streamIndex}...`);
+    
+    // Extract to .vtt file first (mkvextract determines format based on content)
+    const dir = path.dirname(outputPath);
+    const base = path.basename(outputPath, '.srt');
+    const vttPath = path.join(dir, `${base}.vtt`);
+    
+    // Clean up any existing files
+    [vttPath, outputPath].forEach(filePath => {
+      if (fs.existsSync(filePath)) {
+        try {
+          fs.unlinkSync(filePath);
+        } catch (err) {
+          logger.debug(`    Could not delete ${filePath}: ${err.message}`);
+        }
+      }
+    });
+    
+    // mkvextract tracks input.mkv streamIndex:output.vtt
+    const args = ['tracks', videoPath, `${streamIndex}:${vttPath}`];
+    logger.debug(`    mkvextract command: mkvextract ${args.join(' ')}`);
+    
+    const { stdout, stderr } = await execFileAsync('mkvextract', args, {
+      timeout: 60000, // 60 second timeout
+      maxBuffer: 10 * 1024 * 1024 // 10MB buffer
+    });
+    
+    if (stdout) logger.debug(`    mkvextract stdout: ${stdout}`);
+    if (stderr) logger.debug(`    mkvextract stderr: ${stderr}`);
+    
+    // Check if the file was created
+    if (!fs.existsSync(vttPath)) {
+      logger.info(`    ✗ FAILED - mkvextract did not create output file`);
+      return null;
+    }
+    
+    const stats = fs.statSync(vttPath);
+    if (stats.size === 0) {
+      logger.info(`    ✗ FAILED - Extracted file is empty`);
+      fs.unlinkSync(vttPath);
+      return null;
+    }
+    
+    logger.info(`    ✓ Extracted ${stats.size} byte subtitle file`);
+    
+    // Check if it's already .srt or needs conversion
+    const fileExt = path.extname(vttPath).toLowerCase();
+    if (fileExt === '.srt' || vttPath === outputPath) {
+      logger.info(`    ✓ Subtitle is already in SRT format`);
+      if (vttPath !== outputPath) {
+        fs.renameSync(vttPath, outputPath);
+      }
+      return outputPath;
+    }
+    
+    // Convert to SRT using ffmpeg
+    logger.info(`    Converting extracted subtitle to SRT...`);
+    const converted = await convertSubtitleToSrt(vttPath, outputPath);
+    
+    // Clean up the intermediate file
+    try {
+      fs.unlinkSync(vttPath);
+    } catch (err) {
+      logger.debug(`    Could not delete intermediate file: ${err.message}`);
+    }
+    
+    return converted;
+    
+  } catch (error) {
+    logger.info(`    ✗ FAILED - ${error.message}`);
+    logger.debug(`    mkvextract error details:`, error);
+    return null;
+  }
+}
+
+/**
  * Try to extract a subtitle stream using various methods
  * @param {string} videoPath - Path to the video file
  * @param {object} stream - The subtitle stream object from ffprobe
@@ -97,7 +198,23 @@ async function tryExtractStream(videoPath, stream, outputPath) {
   const dir = path.dirname(outputPath);
   const base = path.basename(outputPath, '.srt');
   
-  // Method 1: Try extracting to various native formats with copy (no re-encoding)
+  // Check if this is an MKV file and if mkvextract is available
+  const fileExt = path.extname(videoPath).toLowerCase();
+  const isMkvFile = fileExt === '.mkv';
+  
+  if (isMkvFile) {
+    const hasMkvExtract = await isMkvExtractAvailable();
+    
+    if (hasMkvExtract) {
+      logger.info(`  Method 1: Using mkvextract (MKV-specific tool)...`);
+      const result = await extractWithMkvExtract(videoPath, streamIndex, outputPath);
+      if (result) return result;
+    } else {
+      logger.info(`  mkvextract not available, falling back to ffmpeg methods`);
+    }
+  }
+  
+  // Try extracting to various native formats with copy (no re-encoding) using ffmpeg
   const formatsToTry = [
     { ext: 'vtt', desc: 'WebVTT' },
     { ext: 'srt', desc: 'SRT' },
@@ -105,10 +222,12 @@ async function tryExtractStream(videoPath, stream, outputPath) {
     { ext: 'ssa', desc: 'SSA' }
   ];
   
+  let methodNum = isMkvFile ? 2 : 1; // Adjust method numbering based on whether mkvextract was tried
+  
   for (let i = 0; i < formatsToTry.length; i++) {
     const format = formatsToTry[i];
     const tempOutput = path.join(dir, `${base}.${format.ext}`);
-    logger.info(`  Method ${i + 1}: Extracting as ${format.desc} with copy...`);
+    logger.info(`  Method ${methodNum++}: Extracting as ${format.desc} with copy...`);
     let result = await tryExtractionMethod(videoPath, streamIndex, tempOutput, { 
       copy: true, 
       fixSubDuration: true 
@@ -128,27 +247,27 @@ async function tryExtractStream(videoPath, stream, outputPath) {
     }
   }
   
-  // Method 5: Try with SRT codec and fix_sub_duration
-  logger.info(`  Method 5: Converting to SRT with fix_sub_duration...`);
+  // Try with SRT codec and fix_sub_duration
+  logger.info(`  Method ${methodNum++}: Converting to SRT with fix_sub_duration...`);
   let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
     codec: 'srt', 
     fixSubDuration: true 
   });
   if (result) return result;
   
-  // Method 6: Try forcing SRT format with fix_sub_duration
-  logger.info(`  Method 6: Forcing SRT format with fix_sub_duration...`);
+  // Try forcing SRT format with fix_sub_duration
+  logger.info(`  Method ${methodNum++}: Forcing SRT format with fix_sub_duration...`);
   result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
     format: 'srt',
     fixSubDuration: true 
   });
   if (result) return result;
   
-  // Method 7-11: Try each text-based codec with fix_sub_duration
+  // Try each text-based codec with fix_sub_duration
   const codecsToTry = ['webvtt', 'ass', 'subrip', 'mov_text', 'text'];
   for (let i = 0; i < codecsToTry.length; i++) {
     const codec = codecsToTry[i];
-    logger.info(`  Method ${7 + i}: Converting with codec '${codec}' and fix_sub_duration...`);
+    logger.info(`  Method ${methodNum++}: Converting with codec '${codec}' and fix_sub_duration...`);
     result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
       codec,
       fixSubDuration: true 
