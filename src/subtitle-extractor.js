@@ -142,12 +142,21 @@ async function tryExtractStream(videoPath, stream, outputPath) {
  */
 function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
   return new Promise((resolve) => {
+    // Log what we're attempting
+    const optionsDesc = [];
+    if (options.copy) optionsDesc.push('copy');
+    if (options.codec) optionsDesc.push(`codec=${options.codec}`);
+    if (options.format) optionsDesc.push(`format=${options.format}`);
+    if (optionsDesc.length === 0) optionsDesc.push('auto-detect');
+    logger.debug(`  Attempting extraction with: ${optionsDesc.join(', ')}`);
+    
     // Clean up any existing output file
     if (fs.existsSync(outputPath)) {
       try {
         fs.unlinkSync(outputPath);
+        logger.debug(`  Cleaned up existing output file`);
       } catch (err) {
-        logger.debug(`Could not delete existing file: ${outputPath}`);
+        logger.debug(`  Could not delete existing file: ${err.message}`);
       }
     }
     
@@ -168,31 +177,36 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
     // Add common options to handle edge cases
     outputOptions.push('-avoid_negative_ts', 'make_zero');
     
+    logger.debug(`  Output options: ${JSON.stringify(outputOptions)}`);
+    
     command
       .outputOptions(outputOptions)
       .output(outputPath)
       .on('start', (commandLine) => {
-        logger.debug('FFmpeg command:', commandLine);
+        logger.debug(`  FFmpeg command: ${commandLine}`);
       })
       .on('end', () => {
         // Verify the file was created and has content
         if (fs.existsSync(outputPath)) {
           const stats = fs.statSync(outputPath);
           if (stats.size > 0) {
-            logger.info(`Extraction succeeded: ${outputPath} (${stats.size} bytes)`);
+            logger.info(`  ✓ Extraction succeeded: ${outputPath} (${stats.size} bytes)`);
             resolve(outputPath);
           } else {
-            logger.debug(`Extracted file is empty`);
+            logger.debug(`  ✗ Extracted file is empty (0 bytes)`);
             fs.unlinkSync(outputPath);
             resolve(null);
           }
         } else {
-          logger.debug(`Output file was not created`);
+          logger.debug(`  ✗ Output file was not created`);
           resolve(null);
         }
       })
       .on('error', (err, stdout, stderr) => {
-        logger.debug(`Extraction method failed: ${err.message}`);
+        logger.debug(`  ✗ Extraction failed: ${err.message}`);
+        if (stderr) {
+          logger.debug(`  FFmpeg stderr: ${stderr.substring(0, 200)}${stderr.length > 200 ? '...' : ''}`);
+        }
         // Clean up failed output file
         if (fs.existsSync(outputPath)) {
           try {
