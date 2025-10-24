@@ -1,5 +1,5 @@
 @echo off
-setlocal disabledelayedexpansion
+setlocal
 
 REM Windows batch wrapper for translate-folder.js
 REM Makes it easier to drag-and-drop folders
@@ -24,27 +24,43 @@ if "%~1"=="" (
     echo Drag and drop a folder here, or type/paste the full path
     echo Example: D:\TV Shows\Breaking Bad\Season 1
     echo.
-    set /p FOLDER_PATH=Folder path: 
+    set /p FOLDER_PATH=Folder path 
+    
+    REM Remove surrounding quotes if user added them
+    call :RemoveQuotes FOLDER_PATH
     
     REM Check if user entered anything
-    if not defined FOLDER_PATH (
+    if "!FOLDER_PATH!"=="" (
         echo.
         echo ERROR: No folder path provided!
         pause
         exit /b 1
     )
-    
-    REM Debug output
-    echo.
-    echo [DEBUG] Raw input: %FOLDER_PATH%
-    echo.
-    
-    REM Pass to Node.js with quotes - Node will handle quote stripping
-    node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 ) else (
-    REM Parameter passed - use it directly
-    node "%~dp0translate-folder.js" %1
+    set "FOLDER_PATH=%~1"
 )
+
+echo.
+echo =======================================
+echo Folder: %FOLDER_PATH%
+echo Target language: From .env file (TARGET_LANG)
+echo =======================================
+echo.
+
+REM Run the batch translation script
+node "%~dp0translate-folder.js" "%FOLDER_PATH%"
+
+goto :End
+
+:RemoveQuotes
+REM Subroutine to remove quotes from a variable
+setlocal enabledelayedexpansion
+set "temp=!%~1!"
+set "temp=!temp:"=!"
+endlocal & set "%~1=%temp%"
+goto :eof
+
+:End
 
 echo.
 echo =======================================

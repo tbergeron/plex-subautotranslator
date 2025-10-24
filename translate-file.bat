@@ -1,5 +1,5 @@
 @echo off
-setlocal disabledelayedexpansion
+setlocal
 
 REM Windows batch wrapper for translate-file.js
 REM Makes it easier to drag-and-drop files
@@ -24,27 +24,43 @@ if "%~1"=="" (
     echo Drag and drop a video file here, or type/paste the full path
     echo Example: D:\Movies\Inception\Inception.mkv
     echo.
-    set /p VIDEO_FILE=Video file path: 
+    set /p VIDEO_FILE=Video file path 
+    
+    REM Remove surrounding quotes if user added them
+    call :RemoveQuotes VIDEO_FILE
     
     REM Check if user entered anything
-    if not defined VIDEO_FILE (
+    if "!VIDEO_FILE!"=="" (
         echo.
         echo ERROR: No file path provided!
         pause
         exit /b 1
     )
-    
-    REM Debug output
-    echo.
-    echo [DEBUG] Raw input: %VIDEO_FILE%
-    echo.
-    
-    REM Pass to Node.js with quotes - Node will handle quote stripping
-    node "%~dp0translate-file.js" "%VIDEO_FILE%"
 ) else (
-    REM Parameter passed - use it directly
-    node "%~dp0translate-file.js" %1
+    set "VIDEO_FILE=%~1"
 )
+
+echo.
+echo =======================================
+echo Video file: %VIDEO_FILE%
+echo Target language: From .env file (TARGET_LANG)
+echo =======================================
+echo.
+
+REM Run the translation script
+node "%~dp0translate-file.js" "%VIDEO_FILE%"
+
+goto :End
+
+:RemoveQuotes
+REM Subroutine to remove quotes from a variable
+setlocal enabledelayedexpansion
+set "temp=!%~1!"
+set "temp=!temp:"=!"
+endlocal & set "%~1=%temp%"
+goto :eof
+
+:End
 
 echo.
 echo =======================================
