@@ -92,44 +92,43 @@ async function tryExtractStream(videoPath, stream, outputPath) {
   const codecName = stream.codec_name;
   const streamIndex = stream.index;
   
-  // Define known text-based subtitle codecs
-  const textBasedCodecs = ['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'text', 'webvtt', 'wvtt'];
+  logger.info(`Trying multiple extraction methods for codec '${codecName || 'unknown'}'...`);
   
-  // For known text-based codecs, try standard conversion first
-  if (textBasedCodecs.includes(codecName)) {
-    logger.debug(`Trying standard SRT conversion for codec '${codecName}'...`);
-    const result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec: 'srt' });
+  // Method 1: Try standard SRT codec conversion
+  logger.debug(`Method 1: Converting to SRT codec...`);
+  let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec: 'srt' });
+  if (result) return result;
+  
+  // Method 2: Try forcing output format to SRT
+  logger.debug(`Method 2: Forcing SRT format...`);
+  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { format: 'srt' });
+  if (result) return result;
+  
+  // Method 3: Try each text-based codec individually
+  const codecsToTry = ['webvtt', 'ass', 'subrip', 'mov_text', 'text'];
+  for (let i = 0; i < codecsToTry.length; i++) {
+    const codec = codecsToTry[i];
+    logger.debug(`Method ${3 + i}: Converting to codec '${codec}'...`);
+    result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec });
     if (result) return result;
   }
   
-  // For unknown/none codecs, try each text-based codec
-  if (!codecName || codecName === 'none' || codecName === 'unknown' || !textBasedCodecs.includes(codecName)) {
-    logger.info(`Codec is '${codecName || 'unknown'}'. Trying multiple extraction methods...`);
-    
-    // Try forcing output format to SRT
-    logger.debug(`Attempt 1: Forcing SRT format...`);
-    let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { format: 'srt' });
-    if (result) return result;
-    
-    // Try each text-based codec
-    const codecsToTry = ['srt', 'webvtt', 'ass', 'mov_text', 'text'];
-    for (const codec of codecsToTry) {
-      logger.debug(`Attempt: Converting to codec '${codec}'...`);
-      result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec });
-      if (result) return result;
-    }
-    
-    // Try copying the stream as-is
-    logger.debug(`Attempt: Copying subtitle stream without conversion...`);
-    result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true });
-    if (result) return result;
-    
-    // Try with text subtitle decoder
-    logger.debug(`Attempt: Using text subtitle decoder...`);
-    result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec: 'text' });
-    if (result) return result;
-  }
+  // Method 8: Try copying the stream as-is
+  logger.debug(`Method 8: Copying subtitle stream without conversion...`);
+  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true });
+  if (result) return result;
   
+  // Method 9: Try forcing format with copy
+  logger.debug(`Method 9: Forcing SRT format with copy...`);
+  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true, format: 'srt' });
+  if (result) return result;
+  
+  // Method 10: Try extracting without codec/format specification
+  logger.debug(`Method 10: Extracting without codec specification...`);
+  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, {});
+  if (result) return result;
+  
+  logger.warn(`All extraction methods failed for stream index ${streamIndex}`);
   return null;
 }
 
@@ -160,6 +159,7 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
     } else if (options.codec) {
       outputOptions.push('-c:s', options.codec);
     }
+    // If neither copy nor codec is specified, let ffmpeg auto-detect
     
     if (options.format) {
       outputOptions.push('-f', options.format);
