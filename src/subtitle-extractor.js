@@ -18,7 +18,7 @@ async function extractSubtitle(videoPath) {
       // First, probe the file to check if it has subtitles
       ffmpeg.ffprobe(videoPath, (err, metadata) => {
         if (err) {
-          logger.error('Error probing video file:', err);
+          logger.error(`Error probing video file (${videoPath}):`, err);
           return reject(err);
         }
 
@@ -28,11 +28,11 @@ async function extractSubtitle(videoPath) {
         );
 
         if (subtitleStreams.length === 0) {
-          logger.info('No subtitle streams found in video');
+          logger.info(`No subtitle streams found in video: ${videoPath}`);
           return resolve(null);
         }
 
-        logger.info(`Found ${subtitleStreams.length} subtitle stream(s)`);
+        logger.info(`Found ${subtitleStreams.length} subtitle stream(s) in ${videoPath}`);
         logger.debug('Subtitle streams:', subtitleStreams.map(s => ({
           index: s.index,
           codec: s.codec_name,
@@ -46,7 +46,7 @@ async function extractSubtitle(videoPath) {
         const outputSrtPath = path.join(dir, `${base}.extracted.srt`);
 
         // Extract the first subtitle stream
-        logger.info('Extracting subtitle stream...');
+        logger.info(`Extracting subtitle stream from ${videoPath} to ${outputSrtPath}...`);
         
         ffmpeg(videoPath)
           .outputOptions([
@@ -58,32 +58,32 @@ async function extractSubtitle(videoPath) {
             logger.debug('FFmpeg command:', commandLine);
           })
           .on('end', () => {
-            logger.info('Subtitle extraction completed');
+            logger.info(`Subtitle extraction completed: ${outputSrtPath}`);
             
             // Verify the file was created and has content
             if (fs.existsSync(outputSrtPath)) {
               const stats = fs.statSync(outputSrtPath);
               if (stats.size > 0) {
-                logger.info(`Extracted subtitle size: ${stats.size} bytes`);
+                logger.info(`Extracted subtitle size: ${stats.size} bytes (${outputSrtPath})`);
                 resolve(outputSrtPath);
               } else {
-                logger.warn('Extracted subtitle file is empty');
+                logger.warn(`Extracted subtitle file is empty: ${outputSrtPath}`);
                 fs.unlinkSync(outputSrtPath); // Clean up empty file
                 resolve(null);
               }
             } else {
-              logger.warn('Subtitle file was not created');
+              logger.warn(`Subtitle file was not created: ${outputSrtPath}`);
               resolve(null);
             }
           })
           .on('error', (err, stdout, stderr) => {
-            logger.error('Error extracting subtitle:', err.message);
+            logger.error(`Error extracting subtitle from ${videoPath}:`, err.message);
             logger.debug('FFmpeg stderr:', stderr);
             
             // Check if it's a "no suitable output format" error
             if (err.message.includes('Subtitle codec') || 
                 err.message.includes('codec not currently supported')) {
-              logger.warn('Subtitle codec not supported for direct extraction');
+              logger.warn(`Subtitle codec not supported for direct extraction from ${videoPath}`);
               resolve(null);
             } else {
               reject(err);
@@ -92,7 +92,7 @@ async function extractSubtitle(videoPath) {
           .run();
       });
     } catch (error) {
-      logger.error('Unexpected error in extractSubtitle:', error);
+      logger.error(`Unexpected error in extractSubtitle for ${videoPath}:`, error);
       reject(error);
     }
   });

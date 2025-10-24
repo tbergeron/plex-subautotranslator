@@ -134,7 +134,7 @@ async function main() {
     const extractedSubPath = await extractSubtitle(videoPath);
     
     if (!extractedSubPath) {
-      logger.error('No embedded subtitles found in video');
+      logger.error(`No embedded subtitles found in video: ${videoPath}`);
       logger.info('');
       logger.info('Suggestions:');
       logger.info('- Check if the video has embedded subtitles');

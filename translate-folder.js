@@ -119,7 +119,7 @@ async function translateVideoFile(videoPath, targetLang, index, total) {
     const extractedSubPath = await extractSubtitle(videoPath);
     
     if (!extractedSubPath) {
-      logger.warn('  No embedded subtitles found, skipping');
+      logger.warn(`  No embedded subtitles found in ${path.basename(videoPath)}, skipping`);
       return { success: false, reason: 'No subtitles' };
     }
 
@@ -165,7 +165,7 @@ async function main() {
     const videoFiles = getVideoFiles(folderPath);
     
     if (videoFiles.length === 0) {
-      logger.warn('No video files found in folder');
+      logger.warn(`No video files found in folder: ${folderPath}`);
       process.exit(0);
     }
 

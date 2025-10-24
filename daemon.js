@@ -72,7 +72,7 @@ async function subtitleExists(videoPath, targetLang) {
           logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate`);
         }
       } catch (error) {
-        logger.warn(`Could not detect language of existing subtitle: ${error.message}`);
+        logger.warn(`Could not detect language of existing subtitle (${subtitlePath}): ${error.message}`);
         // If we can't detect, assume it needs translation
       }
     }
@@ -146,7 +146,7 @@ async function processVideoFile(videoPath) {
     // Wait for file to be fully copied
     const isStable = await waitForStableFile(videoPath);
     if (!isStable) {
-      logger.warn('File is not stable or no longer exists, skipping');
+      logger.warn(`File is not stable or no longer exists, skipping: ${videoPath}`);
       processingFiles.delete(videoPath);
       return;
     }
@@ -164,7 +164,7 @@ async function processVideoFile(videoPath) {
     const extractedSubPath = await extractSubtitle(videoPath);
     
     if (!extractedSubPath) {
-      logger.warn('No embedded subtitles found in video');
+      logger.warn(`No embedded subtitles found in video: ${videoPath}`);
       processedFiles.add(videoPath);
       processingFiles.delete(videoPath);
       return;
@@ -202,7 +202,7 @@ async function processVideoFile(videoPath) {
     processedFiles.add(videoPath);
 
   } catch (error) {
-    logger.error('Error processing video file:', error.message);
+    logger.error(`Error processing video file (${videoPath}):`, error.message);
     logger.debug('Error details:', error);
   } finally {
     processingFiles.delete(videoPath);

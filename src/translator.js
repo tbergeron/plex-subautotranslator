@@ -76,7 +76,7 @@ function resetTokenCounter() {
  * Split SRT content into manageable chunks
  * Tries to split at subtitle boundaries to maintain structure
  */
-function splitIntoChunks(srtContent) {
+function splitIntoChunks(srtContent, filePath = '') {
   const chunks = [];
   
   // Split by subtitle entries (separated by blank lines)
@@ -100,7 +100,8 @@ function splitIntoChunks(srtContent) {
     chunks.push(currentChunk.trim());
   }
 
-  logger.info(`Split subtitle into ${chunks.length} chunk(s)`);
+  const fileInfo = filePath ? ` (${filePath})` : '';
+  logger.info(`Split subtitle into ${chunks.length} chunk(s)${fileInfo}`);
   chunks.forEach((chunk, index) => {
     logger.debug(`Chunk ${index + 1}: ${chunk.length} characters`);
   });
@@ -183,7 +184,7 @@ This is chunk ${chunkIndex + 1} of ${totalChunks}.`;
  */
 async function detectSubtitleLanguage(srtPath) {
   try {
-    logger.info('Detecting subtitle language...');
+    logger.info(`Detecting subtitle language for ${srtPath}...`);
     
     // Read the SRT file
     const srtContent = fs.readFileSync(srtPath, 'utf8');
@@ -206,7 +207,7 @@ async function detectSubtitleLanguage(srtPath) {
     }
     
     if (sampleText.trim().length < 50) {
-      logger.warn('Not enough text to detect language reliably');
+      logger.warn(`Not enough text to detect language reliably (${srtPath})`);
       return 'Unknown';
     }
     
@@ -234,11 +235,11 @@ async function detectSubtitleLanguage(srtPath) {
     // Track minimal token usage for detection
     trackTokenUsage(response);
     
-    logger.info(`Detected language: ${detectedLanguage}`);
+    logger.info(`Detected language: ${detectedLanguage} (${srtPath})`);
     return detectedLanguage;
     
   } catch (error) {
-    logger.error('Error detecting subtitle language:', error.message);
+    logger.error(`Error detecting subtitle language for ${srtPath}:`, error.message);
     // Return unknown rather than failing, so translation can proceed if user wants
     return 'Unknown';
   }
@@ -321,7 +322,7 @@ async function translateSubtitle(srtPath, videoPath, targetLang, skipLanguageChe
     }
 
     const srtContent = fs.readFileSync(srtPath, 'utf8');
-    logger.info(`Read ${srtContent.length} characters from SRT file`);
+    logger.info(`Read ${srtContent.length} characters from SRT file: ${srtPath}`);
 
     // Detect language unless skipped or disabled via env
     const skipSameLanguage = process.env.SKIP_SAME_LANGUAGE !== 'false';
@@ -330,21 +331,21 @@ async function translateSubtitle(srtPath, videoPath, targetLang, skipLanguageChe
       const detectedLanguage = await detectSubtitleLanguage(srtPath);
       
       if (languagesMatch(detectedLanguage, targetLang)) {
-        logger.info(`Subtitle is already in target language (detected: ${detectedLanguage}, target: ${targetLang})`);
-        logger.info('No translation needed - source and target languages match');
+        logger.info(`Subtitle is already in target language (detected: ${detectedLanguage}, target: ${targetLang}) for ${srtPath}`);
+        logger.info(`No translation needed - source and target languages match for ${srtPath}`);
         
         // Clean up the extracted subtitle file
         try {
           fs.unlinkSync(srtPath);
           logger.debug(`Cleaned up extracted file: ${srtPath}`);
         } catch (cleanupError) {
-          logger.warn(`Could not delete extracted file: ${cleanupError.message}`);
+          logger.warn(`Could not delete extracted file (${srtPath}): ${cleanupError.message}`);
         }
         
         return null; // Return null to indicate no translation was performed
       }
       
-      logger.info(`Source language (${detectedLanguage}) differs from target (${targetLang}), proceeding with translation`);
+      logger.info(`Source language (${detectedLanguage}) differs from target (${targetLang}) for ${srtPath}, proceeding with translation`);
     } else {
       if (!skipSameLanguage) {
         logger.info('Language detection disabled via SKIP_SAME_LANGUAGE=false');
@@ -361,7 +362,7 @@ async function translateSubtitle(srtPath, videoPath, targetLang, skipLanguageChe
     const outputPath = path.join(dir, `${base}.${langCode}.srt`);
 
     // Split into chunks if necessary
-    const chunks = splitIntoChunks(srtContent);
+    const chunks = splitIntoChunks(srtContent, srtPath);
 
     // Translate each chunk
     const translatedChunks = [];

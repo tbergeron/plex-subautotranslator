@@ -147,7 +147,7 @@ async function subtitleExists(videoPath, targetLang) {
           logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate`);
         }
       } catch (error) {
-        logger.warn(`Could not detect language of existing subtitle: ${error.message}`);
+        logger.warn(`Could not detect language of existing subtitle (${subtitlePath}): ${error.message}`);
         // If we can't detect, assume it needs translation
       }
     }
@@ -208,7 +208,7 @@ async function processSubtitle(videoPath, sectionId) {
     const extractedSubPath = await extractSubtitle(videoPath);
     
     if (!extractedSubPath) {
-      logger.warn('No embedded subtitles found in video');
+      logger.warn(`No embedded subtitles found in video: ${videoPath}`);
       return;
     }
 
