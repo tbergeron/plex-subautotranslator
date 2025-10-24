@@ -4,13 +4,34 @@ Automatically extract and translate embedded subtitles from newly added media in
 
 ## Features
 
-- 🎬 Automatically processes new media added to Plex
-- 📝 Extracts embedded subtitles from video files
-- 🌍 Translates subtitles to any language using OpenAI
-- 💾 Saves translated subtitles in SRT format
-- 🔄 Triggers Plex library refresh after translation
+### Automatic Translation
+- 🎬 **Plex Webhook Mode** - Automatically processes new media added to Plex
+- 👁️ **File System Daemon Mode** - Watches directories for new video files (no Plex required)
+- 🧠 **Smart Language Detection** - Automatically detects subtitle language and skips translation if already in target language
+- 💰 **Cost Optimization** - Avoids unnecessary translations, saving API costs
+
+### Subtitle Processing
+- 📝 Extracts embedded subtitles from video files using FFmpeg
+- 🌍 Translates subtitles to any language using OpenAI GPT models
+- 💾 Saves translated subtitles in SRT format with proper naming
+- ✅ Verifies existing subtitles are in target language before re-translating
+- 📦 Handles large subtitles via intelligent chunking
+
+### Manual Tools
+- 🎯 **Manual Translation** - Standalone scripts for translating existing media
+- 🖱️ **Windows Drag & Drop** - Easy batch files with drag-and-drop support
+- 📁 **Batch Processing** - Translate entire folders of videos at once
+
+### Configuration & Control
+- 🔒 **Multi-Library Support** - Handle multiple Plex libraries with different paths
+- 🛡️ **Path Filtering** - Optional security restrictions via `ALLOWED_PATHS`
+- ⚙️ **Flexible Configuration** - Environment-based settings for easy customization
+
+### Monitoring & Logging
 - 📊 Tracks token usage and translation costs
-- 🪵 Comprehensive logging
+- 🪵 Comprehensive logging to console and file
+- 🐛 Debug mode for troubleshooting
+- 🔄 Real-time progress tracking
 
 ## Quick Start for Windows Users
 
@@ -27,7 +48,7 @@ Automatically extract and translate embedded subtitles from newly added media in
 ## Prerequisites
 
 - Node.js 16+ installed
-- Plex Media Server
+- Plex Media Server (optional if using daemon mode)
 - OpenAI API key
 - FFmpeg (included via ffmpeg-static)
 
