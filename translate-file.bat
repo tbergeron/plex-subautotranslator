@@ -22,9 +22,12 @@ REM Get the video file path
 if "%~1"=="" (
     REM No parameter passed, prompt user for input
     echo Drag and drop a video file here, or type/paste the full path
-    echo Example: D:\Movies\Inception (2010)\Inception (2010).mkv
+    echo Example: D:\Movies\Inception\Inception.mkv
     echo.
-    set /p "VIDEO_FILE=Video file path: "
+    set /p VIDEO_FILE=Video file path: 
+    
+    REM Strip quotes using FOR loop (safe with exclamation marks)
+    for /f "delims=" %%i in ("%VIDEO_FILE%") do set "VIDEO_FILE=%%~i"
     
     REM Check if user entered anything
     if not defined VIDEO_FILE (
@@ -33,20 +36,13 @@ if "%~1"=="" (
         pause
         exit /b 1
     )
+    
+    REM Pass to Node.js
+    node "%~dp0translate-file.js" "%VIDEO_FILE%"
 ) else (
-    REM Parameter passed - %~1 automatically strips quotes
-    set "VIDEO_FILE=%~1"
+    REM Parameter passed - use it directly
+    node "%~dp0translate-file.js" %1
 )
-
-echo.
-echo =======================================
-echo Processing video file...
-echo Target language: From .env file (TARGET_LANG)
-echo =======================================
-echo.
-
-REM Run the translation script
-node "%~dp0translate-file.js" "%VIDEO_FILE%"
 
 echo.
 echo =======================================

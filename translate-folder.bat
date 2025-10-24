@@ -24,7 +24,10 @@ if "%~1"=="" (
     echo Drag and drop a folder here, or type/paste the full path
     echo Example: D:\TV Shows\Breaking Bad\Season 1
     echo.
-    set /p "FOLDER_PATH=Folder path: "
+    set /p FOLDER_PATH=Folder path: 
+    
+    REM Strip quotes using FOR loop (safe with exclamation marks)
+    for /f "delims=" %%i in ("%FOLDER_PATH%") do set "FOLDER_PATH=%%~i"
     
     REM Check if user entered anything
     if not defined FOLDER_PATH (
@@ -33,20 +36,13 @@ if "%~1"=="" (
         pause
         exit /b 1
     )
+    
+    REM Pass to Node.js
+    node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 ) else (
-    REM Parameter passed - %~1 automatically strips quotes
-    set "FOLDER_PATH=%~1"
+    REM Parameter passed - use it directly
+    node "%~dp0translate-folder.js" %1
 )
-
-echo.
-echo =======================================
-echo Processing folder...
-echo Target language: From .env file (TARGET_LANG)
-echo =======================================
-echo.
-
-REM Run the batch translation script
-node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 
 echo.
 echo =======================================
