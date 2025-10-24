@@ -24,7 +24,7 @@ if "%~1"=="" (
     echo Drag and drop a folder here, or type/paste the full path
     echo Example: D:\TV Shows\Breaking Bad\Season 1
     echo.
-    set /p "FOLDER_PATH=Folder path: "
+    set /p FOLDER_PATH=Folder path: 
     
     REM Check if user entered anything
     if not defined FOLDER_PATH (
@@ -39,8 +39,8 @@ if "%~1"=="" (
     echo [DEBUG] Raw input: %FOLDER_PATH%
     echo.
     
-    REM Pass to Node.js - let Node.js handle quote removal
-    node "%~dp0translate-folder.js" %FOLDER_PATH%
+    REM Pass to Node.js with quotes - Node will handle quote stripping
+    node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 ) else (
     REM Parameter passed - use it directly
     node "%~dp0translate-folder.js" %1

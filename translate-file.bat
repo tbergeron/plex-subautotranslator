@@ -24,7 +24,7 @@ if "%~1"=="" (
     echo Drag and drop a video file here, or type/paste the full path
     echo Example: D:\Movies\Inception\Inception.mkv
     echo.
-    set /p "VIDEO_FILE=Video file path: "
+    set /p VIDEO_FILE=Video file path: 
     
     REM Check if user entered anything
     if not defined VIDEO_FILE (
@@ -39,8 +39,8 @@ if "%~1"=="" (
     echo [DEBUG] Raw input: %VIDEO_FILE%
     echo.
     
-    REM Pass to Node.js - let Node.js handle quote removal
-    node "%~dp0translate-file.js" %VIDEO_FILE%
+    REM Pass to Node.js with quotes - Node will handle quote stripping
+    node "%~dp0translate-file.js" "%VIDEO_FILE%"
 ) else (
     REM Parameter passed - use it directly
     node "%~dp0translate-file.js" %1

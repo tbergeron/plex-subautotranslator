@@ -36,7 +36,9 @@ function parseArgs() {
 
   // Strip surrounding quotes if present (Windows batch sometimes includes them)
   let inputPath = args[0];
-  if (inputPath.startsWith('"') && inputPath.endsWith('"')) {
+  
+  // Handle double quotes (when user enters "path" and batch adds another layer)
+  while (inputPath.startsWith('"') && inputPath.endsWith('"') && inputPath.length > 1) {
     inputPath = inputPath.slice(1, -1);
   }
   
