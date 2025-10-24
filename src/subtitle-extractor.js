@@ -94,42 +94,114 @@ async function tryExtractStream(videoPath, stream, outputPath) {
   
   logger.info(`Trying multiple extraction methods for codec '${codecName || 'unknown'}'...`);
   
-  // Method 1: Try standard SRT codec conversion
-  logger.info(`  Method 1: Converting to SRT codec...`);
-  let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec: 'srt' });
+  const dir = path.dirname(outputPath);
+  const base = path.basename(outputPath, '.srt');
+  
+  // Method 1: Try extracting to various native formats with copy (no re-encoding)
+  const formatsToTry = [
+    { ext: 'vtt', desc: 'WebVTT' },
+    { ext: 'srt', desc: 'SRT' },
+    { ext: 'ass', desc: 'ASS' },
+    { ext: 'ssa', desc: 'SSA' }
+  ];
+  
+  for (let i = 0; i < formatsToTry.length; i++) {
+    const format = formatsToTry[i];
+    const tempOutput = path.join(dir, `${base}.${format.ext}`);
+    logger.info(`  Method ${i + 1}: Extracting as ${format.desc} with copy...`);
+    let result = await tryExtractionMethod(videoPath, streamIndex, tempOutput, { 
+      copy: true, 
+      fixSubDuration: true 
+    });
+    
+    // If we got a .vtt or other format, try to convert it to .srt
+    if (result && format.ext !== 'srt') {
+      logger.info(`    Got ${format.ext} file, converting to SRT...`);
+      const converted = await convertSubtitleToSrt(result, outputPath);
+      if (converted) {
+        // Clean up the intermediate file
+        try { fs.unlinkSync(result); } catch (e) {}
+        return outputPath;
+      }
+    } else if (result) {
+      return result;
+    }
+  }
+  
+  // Method 5: Try with SRT codec and fix_sub_duration
+  logger.info(`  Method 5: Converting to SRT with fix_sub_duration...`);
+  let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
+    codec: 'srt', 
+    fixSubDuration: true 
+  });
   if (result) return result;
   
-  // Method 2: Try forcing output format to SRT
-  logger.info(`  Method 2: Forcing SRT format...`);
-  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { format: 'srt' });
+  // Method 6: Try forcing SRT format with fix_sub_duration
+  logger.info(`  Method 6: Forcing SRT format with fix_sub_duration...`);
+  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
+    format: 'srt',
+    fixSubDuration: true 
+  });
   if (result) return result;
   
-  // Method 3: Try each text-based codec individually
+  // Method 7-11: Try each text-based codec with fix_sub_duration
   const codecsToTry = ['webvtt', 'ass', 'subrip', 'mov_text', 'text'];
   for (let i = 0; i < codecsToTry.length; i++) {
     const codec = codecsToTry[i];
-    logger.info(`  Method ${3 + i}: Converting to codec '${codec}'...`);
-    result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec });
+    logger.info(`  Method ${7 + i}: Converting with codec '${codec}' and fix_sub_duration...`);
+    result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { 
+      codec,
+      fixSubDuration: true 
+    });
     if (result) return result;
   }
   
-  // Method 8: Try copying the stream as-is
-  logger.info(`  Method 8: Copying subtitle stream without conversion...`);
-  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true });
-  if (result) return result;
-  
-  // Method 9: Try forcing format with copy
-  logger.info(`  Method 9: Forcing SRT format with copy...`);
-  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true, format: 'srt' });
-  if (result) return result;
-  
-  // Method 10: Try extracting without codec/format specification
-  logger.info(`  Method 10: Extracting without codec specification...`);
-  result = await tryExtractionMethod(videoPath, streamIndex, outputPath, {});
-  if (result) return result;
-  
   logger.warn(`All extraction methods failed for stream index ${streamIndex}`);
   return null;
+}
+
+/**
+ * Convert a subtitle file to SRT format
+ * @param {string} inputPath - Path to input subtitle file
+ * @param {string} outputPath - Path to output SRT file
+ * @returns {Promise<string|null>}
+ */
+async function convertSubtitleToSrt(inputPath, outputPath) {
+  return new Promise((resolve) => {
+    try {
+      logger.debug(`    Converting ${inputPath} to ${outputPath}`);
+      
+      ffmpeg(inputPath)
+        .outputOptions(['-c:s', 'srt'])
+        .output(outputPath)
+        .on('start', (commandLine) => {
+          logger.debug(`    Conversion command: ${commandLine}`);
+        })
+        .on('end', () => {
+          if (fs.existsSync(outputPath)) {
+            const stats = fs.statSync(outputPath);
+            if (stats.size > 0) {
+              logger.info(`    ✓ Conversion succeeded (${stats.size} bytes)`);
+              resolve(outputPath);
+            } else {
+              logger.debug(`    ✗ Converted file is empty`);
+              fs.unlinkSync(outputPath);
+              resolve(null);
+            }
+          } else {
+            resolve(null);
+          }
+        })
+        .on('error', (err) => {
+          logger.debug(`    ✗ Conversion failed: ${err.message}`);
+          resolve(null);
+        })
+        .run();
+    } catch (error) {
+      logger.debug(`    Exception in conversion: ${error.message}`);
+      resolve(null);
+    }
+  });
 }
 
 /**
@@ -148,6 +220,7 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
       if (options.copy) optionsDesc.push('copy');
       if (options.codec) optionsDesc.push(`codec=${options.codec}`);
       if (options.format) optionsDesc.push(`format=${options.format}`);
+      if (options.fixSubDuration) optionsDesc.push('fix_sub_duration');
       if (optionsDesc.length === 0) optionsDesc.push('auto-detect');
       logger.info(`    Attempting: ${optionsDesc.join(', ')}`);
       
@@ -162,6 +235,17 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
       }
       
       const command = ffmpeg(videoPath);
+      
+      // Add input options if needed
+      const inputOptions = [];
+      if (options.fixSubDuration) {
+        inputOptions.push('-fix_sub_duration');
+      }
+      
+      if (inputOptions.length > 0) {
+        command.inputOptions(inputOptions);
+      }
+      
       const outputOptions = ['-map', `0:${streamIndex}`];
       
       if (options.copy) {
@@ -178,6 +262,7 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
       // Add common options to handle edge cases
       outputOptions.push('-avoid_negative_ts', 'make_zero');
       
+      logger.debug(`    Input options: ${JSON.stringify(inputOptions)}`);
       logger.debug(`    Output options: ${JSON.stringify(outputOptions)}`);
       
       command
