@@ -318,6 +318,89 @@ Plex Subtitle Auto-Translator
 =================================
 ```
 
+## Manual Translation (Existing Media)
+
+If you want to translate subtitles for existing media (not just new additions), use these standalone tools:
+
+### Translate a Single File
+
+**Windows - Drag and Drop:**
+
+Simply drag and drop a video file onto `translate-file.bat`!
+
+**Windows - Command Line:**
+
+```cmd
+translate-file.bat "D:\Movies\Inception (2010)\Inception (2010).mkv"
+
+REM Or specify a different language:
+translate-file.bat "D:\Movies\Inception (2010)\Inception (2010).mkv" Spanish
+```
+
+**Using Node.js directly:**
+
+```bash
+node translate-file.js "path/to/video.mkv"
+node translate-file.js "path/to/video.mkv" French
+```
+
+### Translate All Videos in a Folder
+
+**Windows - Drag and Drop:**
+
+Drag and drop a folder onto `translate-folder.bat`!
+
+**Windows - Command Line:**
+
+```cmd
+translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1"
+
+REM Or specify language:
+translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1" German
+```
+
+**Using Node.js directly:**
+
+```bash
+node translate-folder.js "path/to/folder"
+node translate-folder.js "path/to/folder" Japanese
+```
+
+### Manual Webhook Trigger (Advanced)
+
+You can also manually trigger the webhook endpoint to simulate Plex adding new media:
+
+**PowerShell:**
+
+```powershell
+$body = @{
+    event = "library.new"
+    Metadata = @{
+        type = "movie"
+        librarySectionID = "1"
+        Media = @(
+            @{
+                Part = @(
+                    @{
+                        file = "D:\Plex\Movies\Inception (2010)\Inception (2010).mkv"
+                    }
+                )
+            }
+        )
+    }
+} | ConvertTo-Json -Depth 10
+
+Invoke-WebRequest -Uri http://localhost:4000/webhook -Method POST -Body $body -ContentType "application/json"
+```
+
+**curl:**
+
+```bash
+curl -X POST http://localhost:4000/webhook \
+  -H "Content-Type: application/json" \
+  -d '{"event":"library.new","Metadata":{"type":"movie","librarySectionID":"1","Media":[{"Part":[{"file":"D:\\Movies\\MyMovie.mkv"}]}]}}'
+```
+
 ## How It Works
 
 1. **Webhook Trigger**: When new media is added to Plex, a webhook is sent to this service
@@ -530,7 +613,11 @@ Check the console window for the incoming request log.
 
 ```
 plex-subautotranslator/
-├── server.js                 # Main Express server
+├── server.js                 # Main Express server (webhook mode)
+├── translate-file.js         # Standalone: translate single file
+├── translate-file.bat        # Windows wrapper (drag & drop support)
+├── translate-folder.js       # Standalone: batch translate folder
+├── translate-folder.bat      # Windows wrapper (drag & drop support)
 ├── src/
 │   ├── logger.js            # Logging utility (console + file)
 │   ├── subtitle-extractor.js # FFmpeg subtitle extraction

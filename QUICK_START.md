@@ -79,6 +79,22 @@ When you add new media to Plex, the service will:
 3. Check the video folder for the new `.en.srt` file
 4. Play the video in Plex and select the translated subtitle
 
+## Translate Existing Media
+
+Want to translate subtitles for videos already in your library?
+
+**Single File:**
+- Drag and drop a video file onto `translate-file.bat`
+
+**Entire Folder (TV Season):**
+- Drag and drop a folder onto `translate-folder.bat`
+
+**Command Line:**
+```cmd
+translate-file.bat "D:\Movies\MyMovie.mkv"
+translate-folder.bat "D:\TV Shows\Season 1"
+```
+
 ## Common Issues
 
 **"Node is not recognized..."**

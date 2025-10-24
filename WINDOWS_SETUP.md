@@ -291,6 +291,45 @@ With `gpt-4o-mini`:
 
 Costs are very low, but check your OpenAI usage at: https://platform.openai.com/usage
 
+## Translating Existing Media
+
+The automatic webhook only processes NEW media added to Plex. To translate existing media:
+
+### Single File
+
+1. Open the project folder
+2. Find `translate-file.bat`
+3. Drag and drop your video file onto it
+4. Wait for translation to complete!
+
+Or use Command Prompt:
+
+```cmd
+cd C:\plex-subautotranslator
+translate-file.bat "D:\Movies\MyMovie.mkv"
+translate-file.bat "D:\Movies\MyMovie.mkv" Spanish
+```
+
+### Entire Folder (TV Show Season)
+
+1. Open the project folder
+2. Find `translate-folder.bat`
+3. Drag and drop a folder onto it (e.g., "Season 1" folder)
+4. Wait for all videos to be processed!
+
+Or use Command Prompt:
+
+```cmd
+cd C:\plex-subautotranslator
+translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1"
+translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1" Japanese
+```
+
+The batch scripts will:
+- Skip files that already have translated subtitles
+- Show progress for each file
+- Display a summary at the end
+
 ## Support
 
 If you're still having issues:
