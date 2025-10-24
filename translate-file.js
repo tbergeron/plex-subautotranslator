@@ -16,6 +16,14 @@ const { logger } = require('./src/logger');
 function parseArgs() {
   const args = process.argv.slice(2);
 
+  // Debug output
+  console.error('[DEBUG] Number of arguments:', args.length);
+  console.error('[DEBUG] Raw arguments:', JSON.stringify(args));
+  if (args.length > 0) {
+    console.error('[DEBUG] First argument:', args[0]);
+    console.error('[DEBUG] First argument length:', args[0].length);
+  }
+
   if (args.length === 0) {
     console.error('Usage: node translate-file.js <video-file-path>');
     console.error('');

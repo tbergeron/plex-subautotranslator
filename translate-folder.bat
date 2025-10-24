@@ -24,7 +24,7 @@ if "%~1"=="" (
     echo Drag and drop a folder here, or type/paste the full path
     echo Example: D:\TV Shows\Breaking Bad\Season 1
     echo.
-    set /p FOLDER_PATH=Folder path: 
+    set /p "FOLDER_PATH=Folder path: "
     
     REM Check if user entered anything
     if not defined FOLDER_PATH (
@@ -36,6 +36,11 @@ if "%~1"=="" (
     
     REM Strip quotes using string substitution (safer method)
     set "FOLDER_PATH=%FOLDER_PATH:"=%"
+    
+    REM Debug output
+    echo.
+    echo [DEBUG] Received path: "%FOLDER_PATH%"
+    echo.
     
     REM Pass to Node.js
     node "%~dp0translate-folder.js" "%FOLDER_PATH%"

@@ -24,7 +24,7 @@ if "%~1"=="" (
     echo Drag and drop a video file here, or type/paste the full path
     echo Example: D:\Movies\Inception\Inception.mkv
     echo.
-    set /p VIDEO_FILE=Video file path: 
+    set /p "VIDEO_FILE=Video file path: "
     
     REM Check if user entered anything
     if not defined VIDEO_FILE (
@@ -36,6 +36,11 @@ if "%~1"=="" (
     
     REM Strip quotes using string substitution (safer method)
     set "VIDEO_FILE=%VIDEO_FILE:"=%"
+    
+    REM Debug output
+    echo.
+    echo [DEBUG] Received path: "%VIDEO_FILE%"
+    echo.
     
     REM Pass to Node.js
     node "%~dp0translate-file.js" "%VIDEO_FILE%"
