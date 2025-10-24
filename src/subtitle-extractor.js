@@ -192,8 +192,15 @@ async function convertSubtitleToSrt(inputPath, outputPath) {
             resolve(null);
           }
         })
-        .on('error', (err) => {
+        .on('error', (err, stdout, stderr) => {
           logger.debug(`    ✗ Conversion failed: ${err.message}`);
+          if (stderr) {
+            const stderrLines = stderr.split('\n');
+            logger.debug(`    Conversion stderr (${stderrLines.length} lines):`);
+            stderrLines.forEach(line => {
+              if (line.trim()) logger.debug(`      ${line}`);
+            });
+          }
           resolve(null);
         })
         .run();
@@ -290,7 +297,16 @@ function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
         })
         .on('error', (err, stdout, stderr) => {
           logger.info(`    ✗ FAILED - ${err.message}`);
-          logger.debug(`    FFmpeg stderr: ${stderr ? stderr.substring(0, 300) : 'none'}`);
+          if (stderr) {
+            // Show complete stderr for debugging
+            const stderrLines = stderr.split('\n');
+            logger.debug(`    FFmpeg stderr (${stderrLines.length} lines):`);
+            stderrLines.forEach(line => {
+              if (line.trim()) logger.debug(`      ${line}`);
+            });
+          } else {
+            logger.debug(`    FFmpeg stderr: none`);
+          }
           // Clean up failed output file
           if (fs.existsSync(outputPath)) {
             try {
