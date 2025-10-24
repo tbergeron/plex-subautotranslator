@@ -11,7 +11,9 @@ Automatically extract and translate embedded subtitles from newly added media in
 - 💰 **Cost Optimization** - Avoids unnecessary translations, saving API costs
 
 ### Subtitle Processing
-- 📝 Extracts embedded subtitles from video files using FFmpeg
+- 📝 Extracts embedded subtitles from video files using FFmpeg and MKVToolNix
+- 🎯 **Smart Extraction** - Uses MKVToolNix for MKV files (better handling of WebVTT and problematic codecs)
+- 🔄 **Multiple Fallback Methods** - Tries 10+ extraction methods to handle any subtitle format
 - 🌍 Translates subtitles to any language using OpenAI GPT models
 - 💾 Saves translated subtitles in SRT format with proper naming
 - ✅ Verifies existing subtitles are in target language before re-translating
@@ -51,6 +53,7 @@ Automatically extract and translate embedded subtitles from newly added media in
 - Plex Media Server (optional if using daemon mode)
 - OpenAI API key
 - FFmpeg (included via ffmpeg-static)
+- MKVToolNix (optional but recommended for MKV files - provides better subtitle extraction)
 
 ## Installation
 
@@ -123,6 +126,28 @@ netsh advfirewall firewall add rule name="Plex Subtitle Translator" dir=in actio
 3. Click **Add Webhook**
 4. Enter: `http://localhost:4000/webhook`
 5. Click **Save Changes**
+
+**Step 6.5: Install MKVToolNix (Optional but Recommended)**
+
+For better subtitle extraction from MKV files (especially WebVTT subtitles):
+
+**Using Chocolatey (Recommended):**
+```cmd
+choco install mkvtoolnix
+```
+
+**Or download manually:**
+1. Download from https://mkvtoolnix.download/downloads.html#windows
+2. Run the installer
+3. Make sure to check "Add to PATH" during installation
+4. Restart your computer after installation
+
+**Verify installation:**
+```cmd
+mkvextract --version
+```
+
+If this shows the version number, MKVToolNix is properly installed. If not installed, the tool will automatically fall back to FFmpeg-only extraction (which still works for most files).
 
 **Step 7: Start the Service**
 
@@ -202,6 +227,33 @@ LOG_LEVEL=info
 5. Copy the token value to your `.env` file
 
 Alternatively, check this guide: https://support.plex.tv/articles/204059436-finding-an-authentication-token-x-plex-token/
+
+**3.5. Install MKVToolNix (Optional but Recommended)**
+
+For better subtitle extraction from MKV files (especially WebVTT subtitles):
+
+**macOS (using Homebrew):**
+```bash
+brew install mkvtoolnix
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+sudo apt update
+sudo apt install mkvtoolnix
+```
+
+**Linux (Fedora/RHEL):**
+```bash
+sudo dnf install mkvtoolnix
+```
+
+**Verify installation:**
+```bash
+mkvextract --version
+```
+
+If this shows the version number, MKVToolNix is properly installed. If not installed, the tool will automatically fall back to FFmpeg-only extraction (which still works for most files).
 
 **4. Configure Plex Webhooks**
 
@@ -527,7 +579,10 @@ curl -X POST http://localhost:4000/webhook \
 
 1. **Webhook Trigger**: When new media is added to Plex, a webhook is sent to this service
 2. **Subtitle Check**: The service checks if a translated subtitle already exists
-3. **Extraction**: If not, it extracts embedded subtitles using FFmpeg
+3. **Extraction**: If not, it extracts embedded subtitles using:
+   - **MKVToolNix** (`mkvextract`) for MKV files - best for WebVTT and problematic codecs
+   - **FFmpeg** with 10+ fallback methods for all other formats
+   - Automatically tries multiple extraction techniques until successful
 4. **Translation**: The subtitle is sent to OpenAI for translation (in chunks if necessary)
 5. **Save**: The translated subtitle is saved as `[filename].[lang].srt`
 6. **Refresh**: Plex library is refreshed to pick up the new subtitle
@@ -735,6 +790,21 @@ SKIP_SAME_LANGUAGE=false
 3. Verify the video file exists and is accessible
 4. Check if subtitle already exists (service skips if present)
 
+#### Subtitle extraction fails with "codec none" or "decoder not found"
+
+**Problem**: FFmpeg reports "Decoder (codec none) not found" when trying to extract subtitles, especially from MKV files with WebVTT subtitles.
+
+**Solution**:
+1. **Install MKVToolNix** (see installation instructions above) - this provides `mkvextract` which handles MKV subtitle extraction much better than FFmpeg
+2. After installing, restart the service
+3. The tool will automatically detect and use `mkvextract` for MKV files
+4. For non-MKV files, the tool will try 10+ different FFmpeg extraction methods automatically
+
+**Why this works**: MKVToolNix's `mkvextract` is specifically designed for Matroska (MKV) files and can extract subtitle tracks that FFmpeg struggles with. The tool will automatically:
+- Use `mkvextract` to extract the subtitle in its native format (e.g., WebVTT)
+- Convert the extracted subtitle to SRT using FFmpeg
+- Fall back to FFmpeg-only methods if `mkvextract` isn't available
+
 #### High OpenAI costs
 
 **Problem**: Translation costs are adding up.
@@ -777,7 +847,7 @@ plex-subautotranslator/
 ├── translate-folder.bat      # Windows wrapper (drag & drop support)
 ├── src/
 │   ├── logger.js            # Logging utility (console + file)
-│   ├── subtitle-extractor.js # FFmpeg subtitle extraction
+│   ├── subtitle-extractor.js # Subtitle extraction (MKVToolNix + FFmpeg)
 │   ├── translator.js        # OpenAI translation logic
 │   └── plex-api.js          # Plex API integration
 ├── logs/
@@ -846,18 +916,20 @@ MIT
 ## Credits
 
 Built with:
-- [OpenAI API](https://openai.com/)
-- [FFmpeg](https://ffmpeg.org/)
-- [Express](https://expressjs.com/)
-- [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg)
+- [OpenAI API](https://openai.com/) - AI-powered translation
+- [FFmpeg](https://ffmpeg.org/) - Multimedia framework for subtitle extraction
+- [MKVToolNix](https://mkvtoolnix.download/) - MKV file manipulation (optional but recommended)
+- [Express](https://expressjs.com/) - Web server for webhooks
+- [fluent-ffmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg) - FFmpeg wrapper for Node.js
 
 ## Support
 
 For issues and questions:
-1. Check the logs in your console
+1. Check the logs in your console (set `LOG_LEVEL=debug` for detailed output)
 2. Verify all configuration in `.env`
-3. Test individual components (FFmpeg, OpenAI API, Plex connection)
-4. Review Plex webhook documentation: https://support.plex.tv/articles/115002267687-webhooks/
+3. Test individual components (FFmpeg, MKVToolNix, OpenAI API, Plex connection)
+4. For subtitle extraction issues, try installing MKVToolNix (see installation instructions above)
+5. Review Plex webhook documentation: https://support.plex.tv/articles/115002267687-webhooks/
 
 ---
 
