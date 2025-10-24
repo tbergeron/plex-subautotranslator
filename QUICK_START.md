@@ -61,7 +61,14 @@ netsh advfirewall firewall add rule name="Plex Subtitle Translator" dir=in actio
 
 ### 6. Start the Service
 
-Double-click `start.bat`
+**Choose one:**
+
+**A) Plex Webhook Mode:**
+- Double-click `start.bat` (requires webhook setup from step 5)
+
+**B) File System Daemon Mode (No Plex needed):**
+- Set `WATCH_PATHS` in `.env`: `WATCH_PATHS=D:\Plex\Movies,E:\Plex\TV Shows`
+- Double-click `daemon.bat`
 
 ## That's It!
 

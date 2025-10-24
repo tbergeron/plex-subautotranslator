@@ -47,6 +47,13 @@ echo =======================================
 echo Installation complete!
 echo =======================================
 echo.
+echo Dependencies installed:
+echo  - express (webhook server)
+echo  - ffmpeg-static (subtitle extraction)
+echo  - openai (translation)
+echo  - chokidar (file system watcher)
+echo  - and more...
+echo.
 echo Next steps:
 echo 1. Copy env.template to .env
 echo 2. Edit .env with your settings

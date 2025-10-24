@@ -194,6 +194,13 @@ Alternatively, check this guide: https://support.plex.tv/articles/204059436-find
 
 ## Usage
 
+You have **two options** for automatic subtitle translation:
+
+1. **Plex Webhook Mode** - Triggers when Plex detects new media (requires Plex webhook setup)
+2. **File System Daemon Mode** - Monitors directories and triggers on any new video file (no Plex required)
+
+### Option 1: Plex Webhook Mode
+
 ### Starting the Server on Windows
 
 **Option 1: Using start.bat (Recommended)**
@@ -317,6 +324,96 @@ Plex Subtitle Auto-Translator
 [2025-10-24T...] [INFO] Waiting for Plex webhooks...
 =================================
 ```
+
+---
+
+### Option 2: File System Daemon Mode (No Plex Required)
+
+This mode watches directories for new video files and automatically translates them - perfect if you don't use Plex or want translation for files added outside of Plex.
+
+**Setup:**
+
+1. Edit your `.env` file and set `WATCH_PATHS`:
+
+```env
+# Watch these directories for new video files
+WATCH_PATHS=D:\Plex\Movies,E:\Plex\TV Shows,F:\Media\Anime
+```
+
+2. **Windows:** Double-click `daemon.bat` or run:
+
+```cmd
+daemon.bat
+```
+
+3. **Linux/Mac:** Run:
+
+```bash
+node daemon.js
+```
+
+**What it does:**
+- ✅ Monitors specified directories for new video files
+- ✅ Waits for files to finish copying (handles large files)
+- ✅ Automatically extracts and translates subtitles
+- ✅ Skips files that already have translated subtitles
+- ✅ Runs continuously in the background
+- ✅ Watches subdirectories (e.g., Season folders inside TV Shows)
+
+**Example output:**
+
+```
+=================================
+Subtitle Translation Daemon
+=================================
+[INFO] Target language: English
+[INFO] Watching 2 path(s):
+[INFO]   - D:\Plex\Movies
+[INFO]   - E:\Plex\TV Shows
+[INFO] Daemon is running. Press Ctrl+C to stop.
+[INFO] Watching for new video files...
+=================================
+[INFO] New file detected: D:\Plex\Movies\Inception (2010)\Inception (2010).mkv
+[INFO] Step 1: Extracting subtitle from video...
+[INFO] Step 2: Translating subtitle to English...
+[INFO] Translation complete!
+=================================
+```
+
+**Configuration options in `.env`:**
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WATCH_PATHS` | - | Comma-separated directories to monitor |
+| `FILE_STABLE_THRESHOLD` | `5000` | Wait time (ms) to ensure file copy is complete |
+| `DEBOUNCE_DELAY` | `2000` | Delay (ms) before processing to avoid duplicate triggers |
+
+**Running as a Windows Service:**
+
+To run the daemon as a background service, use NSSM:
+
+```cmd
+cd C:\nssm\win64
+nssm install PlexSubDaemon
+```
+
+In the NSSM GUI:
+- **Path**: `C:\Program Files\nodejs\node.exe`
+- **Startup directory**: `C:\plex-subautotranslator`
+- **Arguments**: `daemon.js`
+
+**Which mode should I use?**
+
+| Feature | Webhook Mode | Daemon Mode |
+|---------|--------------|-------------|
+| Requires Plex | ✅ Yes | ❌ No |
+| Requires webhook setup | ✅ Yes | ❌ No |
+| Works with any file addition | ❌ No | ✅ Yes |
+| Network port required | ✅ Yes (4000) | ❌ No |
+| Resource usage | Lower | Slightly higher |
+
+**Use Webhook Mode if:** You use Plex and only want to translate Plex-managed media  
+**Use Daemon Mode if:** You want automatic translation for any video files, regardless of how they're added
 
 ## Manual Translation (Existing Media)
 
@@ -625,7 +722,9 @@ Check the console window for the incoming request log.
 
 ```
 plex-subautotranslator/
-├── server.js                 # Main Express server (webhook mode)
+├── server.js                 # Plex webhook server (Option 1)
+├── daemon.js                 # File system watcher daemon (Option 2)
+├── daemon.bat                # Windows wrapper for daemon
 ├── translate-file.js         # Standalone: translate single file
 ├── translate-file.bat        # Windows wrapper (drag & drop support)
 ├── translate-folder.js       # Standalone: batch translate folder
@@ -641,7 +740,7 @@ plex-subautotranslator/
 ├── env.template             # Environment template
 ├── .env                     # Your config (not in git)
 ├── install.bat              # Windows installer script
-├── start.bat                # Windows startup script
+├── start.bat                # Start webhook server
 ├── README.md                # This file (you are here!)
 ├── WINDOWS_SETUP.md         # Detailed Windows setup guide
 └── QUICK_START.md           # 5-minute quick start guide

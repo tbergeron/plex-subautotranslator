@@ -162,13 +162,17 @@ netsh advfirewall firewall add rule name="Plex Subtitle Translator" dir=in actio
 
 ## Step 7: Start the Service
 
+You have two options for automatic translation:
+
+**Option A: Plex Webhook Mode (Recommended for Plex users)**
+
 Double-click `start.bat` or run in Command Prompt:
 
 ```cmd
 start.bat
 ```
 
-You should see:
+This requires Plex webhook configuration (Step 6). You should see:
 
 ```
 =======================================
@@ -183,6 +187,40 @@ Plex Subtitle Auto-Translator
 **The service is now running!**
 
 Keep this window open. The service will automatically process new media added to Plex.
+
+---
+
+**Option B: File System Daemon Mode (Works without Plex)**
+
+This monitors directories for new video files - no Plex or webhook setup required!
+
+1. Edit `.env` and set `WATCH_PATHS`:
+   ```
+   WATCH_PATHS=D:\Plex\Movies,E:\Plex\TV Shows
+   ```
+
+2. Double-click `daemon.bat` or run in Command Prompt:
+   ```cmd
+   daemon.bat
+   ```
+
+You should see:
+
+```
+=======================================
+Subtitle Translation Daemon
+=======================================
+[INFO] Target language: English
+[INFO] Watching 2 path(s):
+[INFO]   - D:\Plex\Movies
+[INFO]   - E:\Plex\TV Shows
+[INFO] Daemon is running. Press Ctrl+C to stop.
+=======================================
+```
+
+**The daemon is now running!**
+
+Keep this window open. The daemon will automatically translate any new video files added to the watched directories!
 
 ## Step 8: Test It
 
