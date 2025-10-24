@@ -95,12 +95,12 @@ async function tryExtractStream(videoPath, stream, outputPath) {
   logger.info(`Trying multiple extraction methods for codec '${codecName || 'unknown'}'...`);
   
   // Method 1: Try standard SRT codec conversion
-  logger.debug(`Method 1: Converting to SRT codec...`);
+  logger.info(`  Method 1: Converting to SRT codec...`);
   let result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec: 'srt' });
   if (result) return result;
   
   // Method 2: Try forcing output format to SRT
-  logger.debug(`Method 2: Forcing SRT format...`);
+  logger.info(`  Method 2: Forcing SRT format...`);
   result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { format: 'srt' });
   if (result) return result;
   
@@ -108,23 +108,23 @@ async function tryExtractStream(videoPath, stream, outputPath) {
   const codecsToTry = ['webvtt', 'ass', 'subrip', 'mov_text', 'text'];
   for (let i = 0; i < codecsToTry.length; i++) {
     const codec = codecsToTry[i];
-    logger.debug(`Method ${3 + i}: Converting to codec '${codec}'...`);
+    logger.info(`  Method ${3 + i}: Converting to codec '${codec}'...`);
     result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { codec });
     if (result) return result;
   }
   
   // Method 8: Try copying the stream as-is
-  logger.debug(`Method 8: Copying subtitle stream without conversion...`);
+  logger.info(`  Method 8: Copying subtitle stream without conversion...`);
   result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true });
   if (result) return result;
   
   // Method 9: Try forcing format with copy
-  logger.debug(`Method 9: Forcing SRT format with copy...`);
+  logger.info(`  Method 9: Forcing SRT format with copy...`);
   result = await tryExtractionMethod(videoPath, streamIndex, outputPath, { copy: true, format: 'srt' });
   if (result) return result;
   
   // Method 10: Try extracting without codec/format specification
-  logger.debug(`Method 10: Extracting without codec specification...`);
+  logger.info(`  Method 10: Extracting without codec specification...`);
   result = await tryExtractionMethod(videoPath, streamIndex, outputPath, {});
   if (result) return result;
   
@@ -142,82 +142,85 @@ async function tryExtractStream(videoPath, stream, outputPath) {
  */
 function tryExtractionMethod(videoPath, streamIndex, outputPath, options = {}) {
   return new Promise((resolve) => {
-    // Log what we're attempting
-    const optionsDesc = [];
-    if (options.copy) optionsDesc.push('copy');
-    if (options.codec) optionsDesc.push(`codec=${options.codec}`);
-    if (options.format) optionsDesc.push(`format=${options.format}`);
-    if (optionsDesc.length === 0) optionsDesc.push('auto-detect');
-    logger.debug(`  Attempting extraction with: ${optionsDesc.join(', ')}`);
-    
-    // Clean up any existing output file
-    if (fs.existsSync(outputPath)) {
-      try {
-        fs.unlinkSync(outputPath);
-        logger.debug(`  Cleaned up existing output file`);
-      } catch (err) {
-        logger.debug(`  Could not delete existing file: ${err.message}`);
+    try {
+      // Log what we're attempting
+      const optionsDesc = [];
+      if (options.copy) optionsDesc.push('copy');
+      if (options.codec) optionsDesc.push(`codec=${options.codec}`);
+      if (options.format) optionsDesc.push(`format=${options.format}`);
+      if (optionsDesc.length === 0) optionsDesc.push('auto-detect');
+      logger.info(`    Attempting: ${optionsDesc.join(', ')}`);
+      
+      // Clean up any existing output file
+      if (fs.existsSync(outputPath)) {
+        try {
+          fs.unlinkSync(outputPath);
+          logger.debug(`    Cleaned up existing output file`);
+        } catch (err) {
+          logger.warn(`    Could not delete existing file: ${err.message}`);
+        }
       }
-    }
-    
-    const command = ffmpeg(videoPath);
-    const outputOptions = ['-map', `0:${streamIndex}`];
-    
-    if (options.copy) {
-      outputOptions.push('-c:s', 'copy');
-    } else if (options.codec) {
-      outputOptions.push('-c:s', options.codec);
-    }
-    // If neither copy nor codec is specified, let ffmpeg auto-detect
-    
-    if (options.format) {
-      outputOptions.push('-f', options.format);
-    }
-    
-    // Add common options to handle edge cases
-    outputOptions.push('-avoid_negative_ts', 'make_zero');
-    
-    logger.debug(`  Output options: ${JSON.stringify(outputOptions)}`);
-    
-    command
-      .outputOptions(outputOptions)
-      .output(outputPath)
-      .on('start', (commandLine) => {
-        logger.debug(`  FFmpeg command: ${commandLine}`);
-      })
-      .on('end', () => {
-        // Verify the file was created and has content
-        if (fs.existsSync(outputPath)) {
-          const stats = fs.statSync(outputPath);
-          if (stats.size > 0) {
-            logger.info(`  ✓ Extraction succeeded: ${outputPath} (${stats.size} bytes)`);
-            resolve(outputPath);
+      
+      const command = ffmpeg(videoPath);
+      const outputOptions = ['-map', `0:${streamIndex}`];
+      
+      if (options.copy) {
+        outputOptions.push('-c:s', 'copy');
+      } else if (options.codec) {
+        outputOptions.push('-c:s', options.codec);
+      }
+      // If neither copy nor codec is specified, let ffmpeg auto-detect
+      
+      if (options.format) {
+        outputOptions.push('-f', options.format);
+      }
+      
+      // Add common options to handle edge cases
+      outputOptions.push('-avoid_negative_ts', 'make_zero');
+      
+      logger.debug(`    Output options: ${JSON.stringify(outputOptions)}`);
+      
+      command
+        .outputOptions(outputOptions)
+        .output(outputPath)
+        .on('start', (commandLine) => {
+          logger.debug(`    FFmpeg command: ${commandLine}`);
+        })
+        .on('end', () => {
+          // Verify the file was created and has content
+          if (fs.existsSync(outputPath)) {
+            const stats = fs.statSync(outputPath);
+            if (stats.size > 0) {
+              logger.info(`    ✓ SUCCESS - Created ${stats.size} byte file`);
+              resolve(outputPath);
+            } else {
+              logger.info(`    ✗ FAILED - File is empty`);
+              fs.unlinkSync(outputPath);
+              resolve(null);
+            }
           } else {
-            logger.debug(`  ✗ Extracted file is empty (0 bytes)`);
-            fs.unlinkSync(outputPath);
+            logger.info(`    ✗ FAILED - File not created`);
             resolve(null);
           }
-        } else {
-          logger.debug(`  ✗ Output file was not created`);
-          resolve(null);
-        }
-      })
-      .on('error', (err, stdout, stderr) => {
-        logger.debug(`  ✗ Extraction failed: ${err.message}`);
-        if (stderr) {
-          logger.debug(`  FFmpeg stderr: ${stderr.substring(0, 200)}${stderr.length > 200 ? '...' : ''}`);
-        }
-        // Clean up failed output file
-        if (fs.existsSync(outputPath)) {
-          try {
-            fs.unlinkSync(outputPath);
-          } catch (cleanupErr) {
-            // Ignore cleanup errors
+        })
+        .on('error', (err, stdout, stderr) => {
+          logger.info(`    ✗ FAILED - ${err.message}`);
+          logger.debug(`    FFmpeg stderr: ${stderr ? stderr.substring(0, 300) : 'none'}`);
+          // Clean up failed output file
+          if (fs.existsSync(outputPath)) {
+            try {
+              fs.unlinkSync(outputPath);
+            } catch (cleanupErr) {
+              // Ignore cleanup errors
+            }
           }
-        }
-        resolve(null);
-      })
-      .run();
+          resolve(null);
+        })
+        .run();
+    } catch (error) {
+      logger.error(`    Exception in tryExtractionMethod: ${error.message}`);
+      resolve(null);
+    }
   });
 }
 
