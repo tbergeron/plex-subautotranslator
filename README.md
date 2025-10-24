@@ -492,10 +492,12 @@ Check the console window for the incoming request log.
 plex-subautotranslator/
 ├── server.js                 # Main Express server
 ├── src/
-│   ├── logger.js            # Logging utility
+│   ├── logger.js            # Logging utility (console + file)
 │   ├── subtitle-extractor.js # FFmpeg subtitle extraction
 │   ├── translator.js        # OpenAI translation logic
 │   └── plex-api.js          # Plex API integration
+├── logs/
+│   └── app.log              # Application log file (auto-created)
 ├── package.json             # Dependencies
 ├── env.template             # Environment template
 ├── .env                     # Your config (not in git)
@@ -515,6 +517,29 @@ Set `LOG_LEVEL=debug` in `.env` for detailed logging:
 ```env
 LOG_LEVEL=debug
 ```
+
+### Log Files
+
+All logs are written to both the console and a file:
+
+- **Log file location**: `logs/app.log`
+- **Windows path**: `C:\plex-subautotranslator\logs\app.log`
+
+The log file contains the same information as the console output, including:
+- Timestamps for all events
+- Webhook activity
+- Subtitle extraction progress
+- Translation status
+- Errors and warnings
+- Token usage statistics
+
+**Tip**: You can monitor the log file in real-time on Windows using PowerShell:
+
+```powershell
+Get-Content logs\app.log -Wait -Tail 50
+```
+
+Or open it with any text editor to review past activity.
 
 ### Testing
 
