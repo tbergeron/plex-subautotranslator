@@ -26,9 +26,6 @@ if "%~1"=="" (
     echo.
     set /p VIDEO_FILE=Video file path: 
     
-    REM Strip quotes using FOR loop (safe with exclamation marks)
-    for /f "delims=" %%i in ("%VIDEO_FILE%") do set "VIDEO_FILE=%%~i"
-    
     REM Check if user entered anything
     if not defined VIDEO_FILE (
         echo.
@@ -36,6 +33,9 @@ if "%~1"=="" (
         pause
         exit /b 1
     )
+    
+    REM Strip quotes using string substitution (safer method)
+    set "VIDEO_FILE=%VIDEO_FILE:"=%"
     
     REM Pass to Node.js
     node "%~dp0translate-file.js" "%VIDEO_FILE%"

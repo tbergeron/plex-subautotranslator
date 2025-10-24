@@ -26,9 +26,6 @@ if "%~1"=="" (
     echo.
     set /p FOLDER_PATH=Folder path: 
     
-    REM Strip quotes using FOR loop (safe with exclamation marks)
-    for /f "delims=" %%i in ("%FOLDER_PATH%") do set "FOLDER_PATH=%%~i"
-    
     REM Check if user entered anything
     if not defined FOLDER_PATH (
         echo.
@@ -36,6 +33,9 @@ if "%~1"=="" (
         pause
         exit /b 1
     )
+    
+    REM Strip quotes using string substitution (safer method)
+    set "FOLDER_PATH=%FOLDER_PATH:"=%"
     
     REM Pass to Node.js
     node "%~dp0translate-folder.js" "%FOLDER_PATH%"
