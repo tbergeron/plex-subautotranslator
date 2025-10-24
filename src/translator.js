@@ -177,13 +177,123 @@ This is chunk ${chunkIndex + 1} of ${totalChunks}.`;
 }
 
 /**
+ * Detect the language of a subtitle file
+ * @param {string} srtPath - Path to the SRT file
+ * @returns {Promise<string>} - Detected language name (e.g., "English", "French")
+ */
+async function detectSubtitleLanguage(srtPath) {
+  try {
+    logger.info('Detecting subtitle language...');
+    
+    // Read the SRT file
+    const srtContent = fs.readFileSync(srtPath, 'utf8');
+    
+    // Extract a sample of text (first ~500 characters of actual subtitle text, not timestamps)
+    const lines = srtContent.split('\n');
+    let sampleText = '';
+    let charCount = 0;
+    const targetChars = 500;
+    
+    for (const line of lines) {
+      // Skip empty lines, numbers, and timestamps
+      if (line.trim() && 
+          !line.match(/^\d+$/) && 
+          !line.match(/^\d{2}:\d{2}:\d{2},\d{3} --> \d{2}:\d{2}:\d{2},\d{3}$/)) {
+        sampleText += line + ' ';
+        charCount += line.length;
+        if (charCount >= targetChars) break;
+      }
+    }
+    
+    if (sampleText.trim().length < 50) {
+      logger.warn('Not enough text to detect language reliably');
+      return 'Unknown';
+    }
+    
+    logger.debug(`Language detection sample (${sampleText.length} chars): ${sampleText.substring(0, 100)}...`);
+    
+    // Use OpenAI to detect the language
+    const response = await openai.chat.completions.create({
+      model: MODEL,
+      messages: [
+        {
+          role: "system",
+          content: "You are a language detection expert. Identify the language of the provided text. Respond with ONLY the language name in English (e.g., 'English', 'French', 'Spanish', 'Japanese', 'Korean', 'German', etc.). Do not include any other text or explanation."
+        },
+        {
+          role: "user",
+          content: `What language is this text?\n\n${sampleText.substring(0, 1000)}`
+        }
+      ],
+      max_tokens: 50,
+      temperature: 0.1
+    });
+    
+    const detectedLanguage = response.choices[0].message.content.trim();
+    
+    // Track minimal token usage for detection
+    trackTokenUsage(response);
+    
+    logger.info(`Detected language: ${detectedLanguage}`);
+    return detectedLanguage;
+    
+  } catch (error) {
+    logger.error('Error detecting subtitle language:', error.message);
+    // Return unknown rather than failing, so translation can proceed if user wants
+    return 'Unknown';
+  }
+}
+
+/**
+ * Check if detected language matches target language
+ * @param {string} detectedLang - Detected language name
+ * @param {string} targetLang - Target language name
+ * @returns {boolean} - True if languages match (case-insensitive, handles variations)
+ */
+function languagesMatch(detectedLang, targetLang) {
+  const detected = detectedLang.toLowerCase().trim();
+  const target = targetLang.toLowerCase().trim();
+  
+  // Direct match
+  if (detected === target) return true;
+  
+  // Check if one contains the other (e.g., "English" vs "English (US)")
+  if (detected.includes(target) || target.includes(detected)) return true;
+  
+  // Common language code mappings
+  const languageMappings = {
+    'english': ['en', 'eng', 'english', 'anglais'],
+    'spanish': ['es', 'esp', 'spanish', 'español', 'espanol'],
+    'french': ['fr', 'fra', 'french', 'français', 'francais'],
+    'german': ['de', 'deu', 'german', 'deutsch'],
+    'italian': ['it', 'ita', 'italian', 'italiano'],
+    'portuguese': ['pt', 'por', 'portuguese', 'português', 'portugues'],
+    'japanese': ['ja', 'jpn', 'japanese', '日本語'],
+    'korean': ['ko', 'kor', 'korean', '한국어'],
+    'chinese': ['zh', 'chi', 'chinese', '中文', 'mandarin'],
+    'russian': ['ru', 'rus', 'russian', 'русский'],
+    'arabic': ['ar', 'ara', 'arabic', 'العربية']
+  };
+  
+  // Check if both languages map to the same language family
+  for (const variants of Object.values(languageMappings)) {
+    const detectedMatches = variants.some(v => detected.includes(v) || v.includes(detected));
+    const targetMatches = variants.some(v => target.includes(v) || v.includes(target));
+    if (detectedMatches && targetMatches) return true;
+  }
+  
+  return false;
+}
+
+/**
  * Translate an entire subtitle file
  * @param {string} srtPath - Path to the extracted SRT file
  * @param {string} videoPath - Path to the original video file
  * @param {string} targetLang - Target language for translation
- * @returns {Promise<string>} - Path to the translated subtitle file
+ * @param {boolean} skipLanguageCheck - Skip language detection (default: false)
+ * @returns {Promise<string|null>} - Path to the translated subtitle file, or null if skipped
  */
-async function translateSubtitle(srtPath, videoPath, targetLang) {
+async function translateSubtitle(srtPath, videoPath, targetLang, skipLanguageCheck = false) {
   const startTime = Date.now();
   resetTokenCounter();
 
@@ -199,6 +309,36 @@ async function translateSubtitle(srtPath, videoPath, targetLang) {
 
     const srtContent = fs.readFileSync(srtPath, 'utf8');
     logger.info(`Read ${srtContent.length} characters from SRT file`);
+
+    // Detect language unless skipped or disabled via env
+    const skipSameLanguage = process.env.SKIP_SAME_LANGUAGE !== 'false';
+    
+    if (!skipLanguageCheck && skipSameLanguage) {
+      const detectedLanguage = await detectSubtitleLanguage(srtPath);
+      
+      if (languagesMatch(detectedLanguage, targetLang)) {
+        logger.info(`Subtitle is already in ${detectedLanguage}, skipping translation`);
+        logger.info('No translation needed - source and target languages match');
+        
+        // Clean up the extracted subtitle file
+        try {
+          fs.unlinkSync(srtPath);
+          logger.debug(`Cleaned up extracted file: ${srtPath}`);
+        } catch (cleanupError) {
+          logger.warn(`Could not delete extracted file: ${cleanupError.message}`);
+        }
+        
+        return null; // Return null to indicate no translation was performed
+      }
+      
+      logger.info(`Source language (${detectedLanguage}) differs from target (${targetLang}), proceeding with translation`);
+    } else {
+      if (!skipSameLanguage) {
+        logger.info('Language detection disabled via SKIP_SAME_LANGUAGE=false');
+      } else {
+        logger.debug('Language detection skipped');
+      }
+    }
 
     // Generate output path based on video file
     const dir = path.dirname(videoPath);
@@ -253,5 +393,9 @@ async function translateSubtitle(srtPath, videoPath, targetLang) {
   }
 }
 
-module.exports = { translateSubtitle };
+module.exports = { 
+  translateSubtitle,
+  detectSubtitleLanguage,
+  languagesMatch
+};
 

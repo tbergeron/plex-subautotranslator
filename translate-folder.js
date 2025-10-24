@@ -22,16 +22,17 @@ function parseArgs() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error('Usage: node translate-folder.js <folder-path> [target-language]');
+    console.error('Usage: node translate-folder.js <folder-path>');
     console.error('');
     console.error('Examples:');
     console.error('  node translate-folder.js "D:\\Movies\\Season 1"');
-    console.error('  node translate-folder.js "D:\\Movies\\Season 1" Spanish');
+    console.error('');
+    console.error('Note: Target language is configured in .env (TARGET_LANG)');
     process.exit(1);
   }
 
   const folderPath = path.resolve(args[0]);
-  const targetLang = args[1] || process.env.TARGET_LANG || 'English';
+  const targetLang = process.env.TARGET_LANG || 'English';
 
   return { folderPath, targetLang };
 }
@@ -102,6 +103,12 @@ async function translateVideoFile(videoPath, targetLang, index, total) {
       videoPath,
       targetLang
     );
+
+    // Check if translation was skipped (language already matches)
+    if (!translatedSubPath) {
+      logger.info('  ✓ Skipped: Already in target language');
+      return { success: true, skipped: true };
+    }
 
     logger.info(`  ✓ Complete: ${path.basename(translatedSubPath)}`);
     return { success: true, skipped: false };

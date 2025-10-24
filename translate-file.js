@@ -17,17 +17,17 @@ function parseArgs() {
   const args = process.argv.slice(2);
 
   if (args.length === 0) {
-    console.error('Usage: node translate-file.js <video-file-path> [target-language]');
+    console.error('Usage: node translate-file.js <video-file-path>');
     console.error('');
     console.error('Examples:');
     console.error('  node translate-file.js "D:\\Movies\\MyMovie.mkv"');
-    console.error('  node translate-file.js "D:\\Movies\\MyMovie.mkv" Spanish');
-    console.error('  node translate-file.js "D:\\Movies\\MyMovie.mkv" French');
+    console.error('');
+    console.error('Note: Target language is configured in .env (TARGET_LANG)');
     process.exit(1);
   }
 
   const videoPath = path.resolve(args[0]);
-  const targetLang = args[1] || process.env.TARGET_LANG || 'English';
+  const targetLang = process.env.TARGET_LANG || 'English';
 
   return { videoPath, targetLang };
 }
@@ -127,14 +127,26 @@ async function main() {
       targetLang
     );
 
+    const endTime = Date.now();
+    const duration = ((endTime - startTime) / 1000).toFixed(2);
+
+    // Check if translation was skipped (language already matches)
+    if (!translatedSubPath) {
+      logger.info('');
+      logger.info('=================================');
+      logger.info('✓ Translation Skipped!');
+      logger.info('=================================');
+      logger.info('Subtitle is already in target language');
+      logger.info(`Total time: ${duration}s`);
+      logger.info('=================================');
+      process.exit(0);
+    }
+
     logger.info('');
     logger.info('=================================');
     logger.info('✓ Translation Complete!');
     logger.info('=================================');
     logger.info(`Translated subtitle: ${translatedSubPath}`);
-    
-    const endTime = Date.now();
-    const duration = ((endTime - startTime) / 1000).toFixed(2);
     logger.info(`Total time: ${duration}s`);
     logger.info('=================================');
 

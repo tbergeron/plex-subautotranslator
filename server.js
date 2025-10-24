@@ -207,6 +207,16 @@ async function processSubtitle(videoPath, sectionId) {
       CONFIG.TARGET_LANG
     );
 
+    // Check if translation was performed or skipped
+    if (!translatedSubPath) {
+      logger.info('Translation skipped - subtitle already in target language');
+      const endTime = Date.now();
+      const duration = ((endTime - startTime) / 1000).toFixed(2);
+      logger.info('=== Subtitle processing complete ===');
+      logger.info(`Total processing time: ${duration}s`);
+      return;
+    }
+
     logger.info(`Translation complete: ${translatedSubPath}`);
 
     // Step 3: Refresh Plex library (optional)

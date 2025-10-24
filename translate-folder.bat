@@ -40,37 +40,15 @@ if "%~1"=="" (
     set "FOLDER_PATH=%~1"
 )
 
-REM Get optional language parameter
-if "%~2"=="" (
-    echo.
-    echo Enter target language or press Enter for default English
-    echo Examples: Spanish, French, German, Japanese, Korean
-    echo.
-    set /p LANGUAGE=Target language 
-    
-    REM If user pressed Enter without typing, leave empty (will use default)
-    if "!LANGUAGE!"=="" (
-        echo Using default language from .env file
-    )
-) else (
-    set "LANGUAGE=%~2"
-)
-
 echo.
 echo =======================================
 echo Folder: %FOLDER_PATH%
-if not "%LANGUAGE%"=="" (
-    echo Target language: %LANGUAGE%
-)
+echo Target language: From .env file (TARGET_LANG)
 echo =======================================
 echo.
 
 REM Run the batch translation script
-if "%LANGUAGE%"=="" (
-    node "%~dp0translate-folder.js" "%FOLDER_PATH%"
-) else (
-    node "%~dp0translate-folder.js" "%FOLDER_PATH%" "%LANGUAGE%"
-)
+node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 
 goto :End
 

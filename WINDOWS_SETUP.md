@@ -106,6 +106,16 @@ You can change this to any language:
 - Korean
 - etc.
 
+**Language Detection Feature:**
+The service automatically detects the subtitle language and skips translation if it's already in your target language. This saves money and time!
+
+Example: If your TARGET_LANG is English and the subtitle is already in English, it won't translate (saves ~$0.01-0.05 per file).
+
+To disable this and force translation:
+```env
+SKIP_SAME_LANGUAGE=false
+```
+
 ### Complete .env Example:
 
 ```env
@@ -117,6 +127,7 @@ ALLOWED_PATHS=D:\Plex\Movies,E:\Plex\TV Shows
 TARGET_LANG=English
 MAX_CHUNK_SIZE=10000
 MAX_TOKENS=8000
+SKIP_SAME_LANGUAGE=true
 PORT=4000
 LOG_LEVEL=info
 ```
@@ -344,16 +355,16 @@ The automatic webhook only processes NEW media added to Plex. To translate exist
 **Method 2: Interactive Mode**
 1. Double-click `translate-file.bat`
 2. When prompted, enter the video file path (or drag & drop into the window)
-3. When prompted, enter target language (or press Enter for default)
-4. Wait for translation to complete!
+3. Wait for translation to complete!
 
 **Method 3: Command Line**
 
 ```cmd
 cd C:\plex-subautotranslator
 translate-file.bat "D:\Movies\MyMovie.mkv"
-translate-file.bat "D:\Movies\MyMovie.mkv" Spanish
 ```
+
+**Note:** Target language is set in `.env` file (`TARGET_LANG`).
 
 ### Entire Folder (TV Show Season)
 
@@ -366,16 +377,16 @@ translate-file.bat "D:\Movies\MyMovie.mkv" Spanish
 **Method 2: Interactive Mode**
 1. Double-click `translate-folder.bat`
 2. When prompted, enter the folder path (or drag & drop into the window)
-3. When prompted, enter target language (or press Enter for default)
-4. Wait for all videos to be processed!
+3. Wait for all videos to be processed!
 
 **Method 3: Command Line**
 
 ```cmd
 cd C:\plex-subautotranslator
 translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1"
-translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1" Japanese
 ```
+
+**Note:** Target language is set in `.env` file (`TARGET_LANG`).
 
 The batch scripts will:
 - Skip files that already have translated subtitles

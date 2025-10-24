@@ -427,25 +427,21 @@ Simply drag and drop a video file onto `translate-file.bat`!
 
 **Windows - Interactive Mode:**
 
-Double-click `translate-file.bat` and it will prompt you to:
-1. Enter the video file path (or drag & drop into the window)
-2. Enter the target language (or press Enter for default)
+Double-click `translate-file.bat` and it will prompt you to enter the video file path (or drag & drop into the window).
 
 **Windows - Command Line:**
 
 ```cmd
 translate-file.bat "D:\Movies\Inception (2010)\Inception (2010).mkv"
-
-REM Or specify a different language:
-translate-file.bat "D:\Movies\Inception (2010)\Inception (2010).mkv" Spanish
 ```
 
 **Using Node.js directly:**
 
 ```bash
 node translate-file.js "path/to/video.mkv"
-node translate-file.js "path/to/video.mkv" French
 ```
+
+**Note:** Target language is configured in your `.env` file (`TARGET_LANG`). To change the language, edit the `.env` file.
 
 ### Translate All Videos in a Folder
 
@@ -455,25 +451,21 @@ Drag and drop a folder onto `translate-folder.bat`!
 
 **Windows - Interactive Mode:**
 
-Double-click `translate-folder.bat` and it will prompt you to:
-1. Enter the folder path (or drag & drop into the window)
-2. Enter the target language (or press Enter for default)
+Double-click `translate-folder.bat` and it will prompt you to enter the folder path (or drag & drop into the window).
 
 **Windows - Command Line:**
 
 ```cmd
 translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1"
-
-REM Or specify language:
-translate-folder.bat "D:\TV Shows\Breaking Bad\Season 1" German
 ```
 
 **Using Node.js directly:**
 
 ```bash
 node translate-folder.js "path/to/folder"
-node translate-folder.js "path/to/folder" Japanese
 ```
+
+**Note:** Target language is configured in your `.env` file (`TARGET_LANG`). To change the language, edit the `.env` file.
 
 ### Manual Webhook Trigger (Advanced)
 
@@ -539,6 +531,7 @@ The `en` code is derived from the first 2 letters of `TARGET_LANG` in your `.env
 | `TARGET_LANG` | `English` | Target language for translation |
 | `MAX_CHUNK_SIZE` | `10000` | Characters per translation chunk |
 | `MAX_TOKENS` | `8000` | Max tokens per API request |
+| `SKIP_SAME_LANGUAGE` | `true` | Skip translation if subtitle already in target language |
 | `PORT` | `4000` | Server port |
 | `PLEX_SERVER_URL` | `http://localhost:32400` | Plex server URL |
 | `PLEX_TOKEN` | - | Plex authentication token |
@@ -585,6 +578,38 @@ You can translate to any language supported by OpenAI. Examples:
 - `Korean`
 - `Chinese`
 - etc.
+
+### Automatic Language Detection
+
+The service automatically detects the language of subtitle files and **skips translation** if the subtitle is already in your target language. This saves API costs and processing time!
+
+**How it works:**
+1. Extracts a sample of text from the subtitle
+2. Uses OpenAI to detect the language
+3. Compares with your `TARGET_LANG`
+4. Only translates if languages differ
+
+**Example:**
+```
+[INFO] Detecting subtitle language...
+[INFO] Detected language: French
+[INFO] Source language (French) differs from target (English), proceeding with translation
+```
+
+Or if already in target language:
+```
+[INFO] Detecting subtitle language...
+[INFO] Detected language: English
+[INFO] Subtitle is already in English, skipping translation
+[INFO] Translation skipped - subtitle already in target language
+```
+
+**To disable this feature** (force translation regardless of detected language):
+```env
+SKIP_SAME_LANGUAGE=false
+```
+
+**Cost savings:** Language detection uses minimal tokens (~100), while full translation uses thousands. This feature typically saves 100% of translation costs for videos that already have subtitles in your target language!
 
 ## Troubleshooting
 

@@ -161,11 +161,20 @@ async function processVideoFile(videoPath) {
     const endTime = Date.now();
     const duration = ((endTime - startTime) / 1000).toFixed(2);
     
-    logger.info('=================================');
-    logger.info('Translation complete!');
-    logger.info(`Translated subtitle: ${translatedSubPath}`);
-    logger.info(`Processing time: ${duration}s`);
-    logger.info('=================================');
+    // Check if translation was performed or skipped
+    if (!translatedSubPath) {
+      logger.info('=================================');
+      logger.info('Translation skipped!');
+      logger.info('Subtitle already in target language');
+      logger.info(`Processing time: ${duration}s`);
+      logger.info('=================================');
+    } else {
+      logger.info('=================================');
+      logger.info('Translation complete!');
+      logger.info(`Translated subtitle: ${translatedSubPath}`);
+      logger.info(`Processing time: ${duration}s`);
+      logger.info('=================================');
+    }
 
     // Mark as processed
     processedFiles.add(videoPath);

@@ -104,6 +104,8 @@ translate-file.bat "D:\Movies\MyMovie.mkv"
 translate-folder.bat "D:\TV Shows\Season 1"
 ```
 
+**Note:** Target language is configured in `.env` (`TARGET_LANG`).
+
 **Tip:** You can also drag & drop files/folders directly into the Command Prompt window when prompted!
 
 ## Common Issues
