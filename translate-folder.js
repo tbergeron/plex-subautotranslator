@@ -38,9 +38,11 @@ function parseArgs() {
 }
 
 /**
- * Check if subtitle already exists
+ * Check if subtitle already exists in the target language
  */
-function subtitleExists(videoPath, targetLang) {
+async function subtitleExists(videoPath, targetLang) {
+  const { detectSubtitleLanguage, languagesMatch } = require('./src/translator');
+  
   const dir = path.dirname(videoPath);
   const ext = path.extname(videoPath);
   const base = path.basename(videoPath, ext);
@@ -48,10 +50,25 @@ function subtitleExists(videoPath, targetLang) {
   const langCode = targetLang.toLowerCase().substring(0, 2);
   const possibleSubtitles = [
     path.join(dir, `${base}.${langCode}.srt`),
-    path.join(dir, `${base}.${targetLang.toLowerCase()}.srt`)
+    path.join(dir, `${base}.${targetLang.toLowerCase()}.srt`),
+    path.join(dir, `${base}.srt`)
   ];
 
-  return possibleSubtitles.some(sub => fs.existsSync(sub));
+  for (const subtitlePath of possibleSubtitles) {
+    if (fs.existsSync(subtitlePath)) {
+      // Verify the subtitle is in the target language
+      try {
+        const detectedLang = await detectSubtitleLanguage(subtitlePath);
+        if (languagesMatch(detectedLang, targetLang)) {
+          return true;
+        }
+      } catch (error) {
+        // If we can't detect, assume it needs translation
+      }
+    }
+  }
+
+  return false;
 }
 
 /**
@@ -81,9 +98,9 @@ async function translateVideoFile(videoPath, targetLang, index, total) {
     logger.info('');
     logger.info(`[${index}/${total}] Processing: ${path.basename(videoPath)}`);
     
-    // Check if subtitle already exists
-    if (subtitleExists(videoPath, targetLang)) {
-      logger.info('✓ Subtitle already exists, skipping');
+    // Check if subtitle already exists in target language
+    if (await subtitleExists(videoPath, targetLang)) {
+      logger.info('✓ Subtitle already exists in target language, skipping');
       return { success: true, skipped: true };
     }
 

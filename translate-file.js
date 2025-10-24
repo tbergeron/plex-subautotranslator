@@ -33,9 +33,11 @@ function parseArgs() {
 }
 
 /**
- * Check if subtitle already exists
+ * Check if subtitle already exists in the target language
  */
-function subtitleExists(videoPath, targetLang) {
+async function subtitleExists(videoPath, targetLang) {
+  const { detectSubtitleLanguage, languagesMatch } = require('./src/translator');
+  
   const dir = path.dirname(videoPath);
   const ext = path.extname(videoPath);
   const base = path.basename(videoPath, ext);
@@ -43,13 +45,27 @@ function subtitleExists(videoPath, targetLang) {
   const langCode = targetLang.toLowerCase().substring(0, 2);
   const possibleSubtitles = [
     path.join(dir, `${base}.${langCode}.srt`),
-    path.join(dir, `${base}.${targetLang.toLowerCase()}.srt`)
+    path.join(dir, `${base}.${targetLang.toLowerCase()}.srt`),
+    path.join(dir, `${base}.srt`)
   ];
 
   for (const subtitlePath of possibleSubtitles) {
     if (fs.existsSync(subtitlePath)) {
-      logger.info(`Subtitle already exists: ${subtitlePath}`);
-      return subtitlePath;
+      logger.info(`Found existing subtitle: ${subtitlePath}`);
+      
+      // Verify the subtitle is in the target language
+      try {
+        const detectedLang = await detectSubtitleLanguage(subtitlePath);
+        if (languagesMatch(detectedLang, targetLang)) {
+          logger.info(`Subtitle is already in target language (${detectedLang})`);
+          return subtitlePath;
+        } else {
+          logger.info(`Subtitle is in ${detectedLang}, not ${targetLang}, will translate`);
+        }
+      } catch (error) {
+        logger.warn(`Could not detect language of existing subtitle: ${error.message}`);
+        // If we can't detect, assume it needs translation
+      }
     }
   }
 
@@ -77,10 +93,10 @@ async function main() {
       process.exit(1);
     }
 
-    // Check if subtitle already exists
-    const existingSub = subtitleExists(videoPath, targetLang);
+    // Check if subtitle already exists in target language
+    const existingSub = await subtitleExists(videoPath, targetLang);
     if (existingSub) {
-      logger.info('Translated subtitle already exists!');
+      logger.info('Subtitle already exists in target language!');
       logger.info(`Location: ${existingSub}`);
       
       const readline = require('readline').createInterface({
