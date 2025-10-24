@@ -21,10 +21,10 @@ if %ERRORLEVEL% NEQ 0 (
 REM Get the video file path
 if "%~1"=="" (
     REM No parameter passed, prompt user for input
-    echo Drag and drop a video file here, or type/paste the full path:
+    echo Drag and drop a video file here, or type/paste the full path
     echo Example: D:\Movies\Inception (2010)\Inception (2010).mkv
     echo.
-    set /p "VIDEO_FILE=Video file path: "
+    set /p VIDEO_FILE=Video file path: 
     
     REM Remove surrounding quotes if user added them
     set "VIDEO_FILE=!VIDEO_FILE:"=!"
@@ -43,10 +43,10 @@ if "%~1"=="" (
 REM Get optional language parameter
 if "%~2"=="" (
     echo.
-    echo Enter target language (or press Enter for default: English):
+    echo Enter target language (or press Enter for default English):
     echo Examples: Spanish, French, German, Japanese, Korean
     echo.
-    set /p "LANGUAGE=Target language: "
+    set /p LANGUAGE=Target language: 
     
     REM If user pressed Enter without typing, leave empty (will use default)
     if "!LANGUAGE!"=="" (
@@ -58,18 +58,18 @@ if "%~2"=="" (
 
 echo.
 echo =======================================
-echo Video file: %VIDEO_FILE%
-if not "%LANGUAGE%"=="" (
-    echo Target language: %LANGUAGE%
+echo Video file: !VIDEO_FILE!
+if not "!LANGUAGE!"=="" (
+    echo Target language: !LANGUAGE!
 )
 echo =======================================
 echo.
 
 REM Run the translation script
-if "%LANGUAGE%"=="" (
-    node "%~dp0translate-file.js" "%VIDEO_FILE%"
+if "!LANGUAGE!"=="" (
+    node "%~dp0translate-file.js" "!VIDEO_FILE!"
 ) else (
-    node "%~dp0translate-file.js" "%VIDEO_FILE%" "%LANGUAGE%"
+    node "%~dp0translate-file.js" "!VIDEO_FILE!" "!LANGUAGE!"
 )
 
 echo.
