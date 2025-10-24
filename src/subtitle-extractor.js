@@ -44,7 +44,7 @@ async function extractSubtitle(videoPath) {
         const codecName = firstSubtitle.codec_name;
         
         // Define supported text-based subtitle codecs
-        const textBasedCodecs = ['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'text', 'webvtt'];
+        const textBasedCodecs = ['subrip', 'srt', 'ass', 'ssa', 'mov_text', 'text', 'webvtt', 'wvtt'];
         const imageBasedCodecs = ['hdmv_pgs_subtitle', 'dvd_subtitle', 'dvdsub'];
         
         // Skip image-based subtitles
