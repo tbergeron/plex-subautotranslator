@@ -24,25 +24,23 @@ if "%~1"=="" (
     echo Drag and drop a folder here, or type/paste the full path
     echo Example: D:\TV Shows\Breaking Bad\Season 1
     echo.
-    set /p FOLDER_PATH=Folder path 
-    
-    REM Remove surrounding quotes if user added them
-    call :RemoveQuotes FOLDER_PATH
+    set /p "FOLDER_PATH=Folder path: "
     
     REM Check if user entered anything
-    if "%FOLDER_PATH%"=="" (
+    if not defined FOLDER_PATH (
         echo.
         echo ERROR: No folder path provided!
         pause
         exit /b 1
     )
 ) else (
+    REM Parameter passed - %~1 automatically strips quotes
     set "FOLDER_PATH=%~1"
 )
 
 echo.
 echo =======================================
-echo Folder: %FOLDER_PATH%
+echo Processing folder...
 echo Target language: From .env file (TARGET_LANG)
 echo =======================================
 echo.
@@ -50,19 +48,6 @@ echo.
 REM Run the batch translation script
 node "%~dp0translate-folder.js" "%FOLDER_PATH%"
 
-goto :End
-
-:RemoveQuotes
-REM Subroutine to remove quotes from a variable
-setlocal enabledelayedexpansion
-set "temp=!%~1!"
-set "temp=!temp:"=!"
-endlocal & set "%~1=%temp%"
-goto :eof
-
-:End
-
 echo.
 echo =======================================
 pause
-

@@ -24,25 +24,23 @@ if "%~1"=="" (
     echo Drag and drop a video file here, or type/paste the full path
     echo Example: D:\Movies\Inception (2010)\Inception (2010).mkv
     echo.
-    set /p VIDEO_FILE=Video file path 
-    
-    REM Remove surrounding quotes if user added them
-    call :RemoveQuotes VIDEO_FILE
+    set /p "VIDEO_FILE=Video file path: "
     
     REM Check if user entered anything
-    if "%VIDEO_FILE%"=="" (
+    if not defined VIDEO_FILE (
         echo.
         echo ERROR: No file path provided!
         pause
         exit /b 1
     )
 ) else (
+    REM Parameter passed - %~1 automatically strips quotes
     set "VIDEO_FILE=%~1"
 )
 
 echo.
 echo =======================================
-echo Video file: %VIDEO_FILE%
+echo Processing video file...
 echo Target language: From .env file (TARGET_LANG)
 echo =======================================
 echo.
@@ -50,19 +48,6 @@ echo.
 REM Run the translation script
 node "%~dp0translate-file.js" "%VIDEO_FILE%"
 
-goto :End
-
-:RemoveQuotes
-REM Subroutine to remove quotes from a variable
-setlocal enabledelayedexpansion
-set "temp=!%~1!"
-set "temp=!temp:"=!"
-endlocal & set "%~1=%temp%"
-goto :eof
-
-:End
-
 echo.
 echo =======================================
 pause
-
