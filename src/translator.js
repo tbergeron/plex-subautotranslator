@@ -277,8 +277,21 @@ function languagesMatch(detectedLang, targetLang) {
   
   // Check if both languages map to the same language family
   for (const variants of Object.values(languageMappings)) {
-    const detectedMatches = variants.some(v => detected.includes(v) || v.includes(detected));
-    const targetMatches = variants.some(v => target.includes(v) || v.includes(target));
+    // Use exact match or word boundary to avoid false positives (e.g., "french" containing "en")
+    const detectedMatches = variants.some(v => {
+      // Exact match
+      if (detected === v) return true;
+      // Check if it's a word within the string (surrounded by word boundaries)
+      const regex = new RegExp(`\\b${v}\\b`, 'i');
+      return regex.test(detected);
+    });
+    const targetMatches = variants.some(v => {
+      // Exact match
+      if (target === v) return true;
+      // Check if it's a word within the string (surrounded by word boundaries)
+      const regex = new RegExp(`\\b${v}\\b`, 'i');
+      return regex.test(target);
+    });
     if (detectedMatches && targetMatches) return true;
   }
   
@@ -317,7 +330,7 @@ async function translateSubtitle(srtPath, videoPath, targetLang, skipLanguageChe
       const detectedLanguage = await detectSubtitleLanguage(srtPath);
       
       if (languagesMatch(detectedLanguage, targetLang)) {
-        logger.info(`Subtitle is already in ${detectedLanguage}, skipping translation`);
+        logger.info(`Subtitle is already in target language (detected: ${detectedLanguage}, target: ${targetLang})`);
         logger.info('No translation needed - source and target languages match');
         
         // Clean up the extracted subtitle file
