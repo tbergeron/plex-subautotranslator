@@ -9,21 +9,6 @@ echo Manual Subtitle Translator
 echo =======================================
 echo.
 
-REM Check if a file was provided
-if "%~1"=="" (
-    echo No file specified!
-    echo.
-    echo Usage: Drag and drop a video file onto this batch file
-    echo   OR: translate-file.bat "path\to\video.mkv" [language]
-    echo.
-    echo Examples:
-    echo   translate-file.bat "D:\Movies\MyMovie.mkv"
-    echo   translate-file.bat "D:\Movies\MyMovie.mkv" Spanish
-    echo.
-    pause
-    exit /b 1
-)
-
 REM Check if Node.js is available
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -34,15 +19,50 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Get the video file path
-set "VIDEO_FILE=%~1"
+if "%~1"=="" (
+    REM No parameter passed, prompt user for input
+    echo Drag and drop a video file here, or type/paste the full path:
+    echo Example: D:\Movies\Inception (2010)\Inception (2010).mkv
+    echo.
+    set /p "VIDEO_FILE=Video file path: "
+    
+    REM Remove surrounding quotes if user added them
+    set "VIDEO_FILE=!VIDEO_FILE:"=!"
+    
+    REM Check if user entered anything
+    if "!VIDEO_FILE!"=="" (
+        echo.
+        echo ERROR: No file path provided!
+        pause
+        exit /b 1
+    )
+) else (
+    set "VIDEO_FILE=%~1"
+)
 
 REM Get optional language parameter
-set "LANGUAGE=%~2"
+if "%~2"=="" (
+    echo.
+    echo Enter target language (or press Enter for default: English):
+    echo Examples: Spanish, French, German, Japanese, Korean
+    echo.
+    set /p "LANGUAGE=Target language: "
+    
+    REM If user pressed Enter without typing, leave empty (will use default)
+    if "!LANGUAGE!"=="" (
+        echo Using default language from .env file
+    )
+) else (
+    set "LANGUAGE=%~2"
+)
 
+echo.
+echo =======================================
 echo Video file: %VIDEO_FILE%
 if not "%LANGUAGE%"=="" (
     echo Target language: %LANGUAGE%
 )
+echo =======================================
 echo.
 
 REM Run the translation script

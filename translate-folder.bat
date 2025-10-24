@@ -9,21 +9,6 @@ echo Batch Subtitle Translator
 echo =======================================
 echo.
 
-REM Check if a folder was provided
-if "%~1"=="" (
-    echo No folder specified!
-    echo.
-    echo Usage: Drag and drop a folder onto this batch file
-    echo   OR: translate-folder.bat "path\to\folder" [language]
-    echo.
-    echo Examples:
-    echo   translate-folder.bat "D:\Movies\Season 1"
-    echo   translate-folder.bat "D:\TV Shows\Show Name\Season 1" Spanish
-    echo.
-    pause
-    exit /b 1
-)
-
 REM Check if Node.js is available
 where node >nul 2>nul
 if %ERRORLEVEL% NEQ 0 (
@@ -34,15 +19,50 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 REM Get the folder path
-set "FOLDER_PATH=%~1"
+if "%~1"=="" (
+    REM No parameter passed, prompt user for input
+    echo Drag and drop a folder here, or type/paste the full path:
+    echo Example: D:\TV Shows\Breaking Bad\Season 1
+    echo.
+    set /p "FOLDER_PATH=Folder path: "
+    
+    REM Remove surrounding quotes if user added them
+    set "FOLDER_PATH=!FOLDER_PATH:"=!"
+    
+    REM Check if user entered anything
+    if "!FOLDER_PATH!"=="" (
+        echo.
+        echo ERROR: No folder path provided!
+        pause
+        exit /b 1
+    )
+) else (
+    set "FOLDER_PATH=%~1"
+)
 
 REM Get optional language parameter
-set "LANGUAGE=%~2"
+if "%~2"=="" (
+    echo.
+    echo Enter target language (or press Enter for default: English):
+    echo Examples: Spanish, French, German, Japanese, Korean
+    echo.
+    set /p "LANGUAGE=Target language: "
+    
+    REM If user pressed Enter without typing, leave empty (will use default)
+    if "!LANGUAGE!"=="" (
+        echo Using default language from .env file
+    )
+) else (
+    set "LANGUAGE=%~2"
+)
 
+echo.
+echo =======================================
 echo Folder: %FOLDER_PATH%
 if not "%LANGUAGE%"=="" (
     echo Target language: %LANGUAGE%
 )
+echo =======================================
 echo.
 
 REM Run the batch translation script

@@ -85,15 +85,19 @@ Want to translate subtitles for videos already in your library?
 
 **Single File:**
 - Drag and drop a video file onto `translate-file.bat`
+- OR double-click `translate-file.bat` and enter path when prompted
 
 **Entire Folder (TV Season):**
 - Drag and drop a folder onto `translate-folder.bat`
+- OR double-click `translate-folder.bat` and enter path when prompted
 
 **Command Line:**
 ```cmd
 translate-file.bat "D:\Movies\MyMovie.mkv"
 translate-folder.bat "D:\TV Shows\Season 1"
 ```
+
+**Tip:** You can also drag & drop files/folders directly into the Command Prompt window when prompted!
 
 ## Common Issues
 

@@ -328,6 +328,12 @@ If you want to translate subtitles for existing media (not just new additions), 
 
 Simply drag and drop a video file onto `translate-file.bat`!
 
+**Windows - Interactive Mode:**
+
+Double-click `translate-file.bat` and it will prompt you to:
+1. Enter the video file path (or drag & drop into the window)
+2. Enter the target language (or press Enter for default)
+
 **Windows - Command Line:**
 
 ```cmd
@@ -349,6 +355,12 @@ node translate-file.js "path/to/video.mkv" French
 **Windows - Drag and Drop:**
 
 Drag and drop a folder onto `translate-folder.bat`!
+
+**Windows - Interactive Mode:**
+
+Double-click `translate-folder.bat` and it will prompt you to:
+1. Enter the folder path (or drag & drop into the window)
+2. Enter the target language (or press Enter for default)
 
 **Windows - Command Line:**
 

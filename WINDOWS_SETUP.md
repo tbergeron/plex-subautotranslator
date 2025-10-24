@@ -297,12 +297,19 @@ The automatic webhook only processes NEW media added to Plex. To translate exist
 
 ### Single File
 
+**Method 1: Drag and Drop**
 1. Open the project folder
 2. Find `translate-file.bat`
 3. Drag and drop your video file onto it
 4. Wait for translation to complete!
 
-Or use Command Prompt:
+**Method 2: Interactive Mode**
+1. Double-click `translate-file.bat`
+2. When prompted, enter the video file path (or drag & drop into the window)
+3. When prompted, enter target language (or press Enter for default)
+4. Wait for translation to complete!
+
+**Method 3: Command Line**
 
 ```cmd
 cd C:\plex-subautotranslator
@@ -312,12 +319,19 @@ translate-file.bat "D:\Movies\MyMovie.mkv" Spanish
 
 ### Entire Folder (TV Show Season)
 
+**Method 1: Drag and Drop**
 1. Open the project folder
 2. Find `translate-folder.bat`
 3. Drag and drop a folder onto it (e.g., "Season 1" folder)
 4. Wait for all videos to be processed!
 
-Or use Command Prompt:
+**Method 2: Interactive Mode**
+1. Double-click `translate-folder.bat`
+2. When prompted, enter the folder path (or drag & drop into the window)
+3. When prompted, enter target language (or press Enter for default)
+4. Wait for all videos to be processed!
+
+**Method 3: Command Line**
 
 ```cmd
 cd C:\plex-subautotranslator
