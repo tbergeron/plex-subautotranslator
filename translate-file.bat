@@ -34,16 +34,13 @@ if "%~1"=="" (
         exit /b 1
     )
     
-    REM Strip quotes using string substitution (safer method)
-    set "VIDEO_FILE=%VIDEO_FILE:"=%"
-    
     REM Debug output
     echo.
-    echo [DEBUG] Received path: "%VIDEO_FILE%"
+    echo [DEBUG] Raw input: %VIDEO_FILE%
     echo.
     
-    REM Pass to Node.js
-    node "%~dp0translate-file.js" "%VIDEO_FILE%"
+    REM Pass to Node.js - let Node.js handle quote removal
+    node "%~dp0translate-file.js" %VIDEO_FILE%
 ) else (
     REM Parameter passed - use it directly
     node "%~dp0translate-file.js" %1

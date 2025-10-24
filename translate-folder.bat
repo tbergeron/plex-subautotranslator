@@ -34,16 +34,13 @@ if "%~1"=="" (
         exit /b 1
     )
     
-    REM Strip quotes using string substitution (safer method)
-    set "FOLDER_PATH=%FOLDER_PATH:"=%"
-    
     REM Debug output
     echo.
-    echo [DEBUG] Received path: "%FOLDER_PATH%"
+    echo [DEBUG] Raw input: %FOLDER_PATH%
     echo.
     
-    REM Pass to Node.js
-    node "%~dp0translate-folder.js" "%FOLDER_PATH%"
+    REM Pass to Node.js - let Node.js handle quote removal
+    node "%~dp0translate-folder.js" %FOLDER_PATH%
 ) else (
     REM Parameter passed - use it directly
     node "%~dp0translate-folder.js" %1

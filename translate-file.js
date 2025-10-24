@@ -34,7 +34,15 @@ function parseArgs() {
     process.exit(1);
   }
 
-  const videoPath = path.resolve(args[0]);
+  // Strip surrounding quotes if present (Windows batch sometimes includes them)
+  let inputPath = args[0];
+  if (inputPath.startsWith('"') && inputPath.endsWith('"')) {
+    inputPath = inputPath.slice(1, -1);
+  }
+  
+  console.error('[DEBUG] Path after quote removal:', inputPath);
+
+  const videoPath = path.resolve(inputPath);
   const targetLang = process.env.TARGET_LANG || 'English';
 
   return { videoPath, targetLang };
